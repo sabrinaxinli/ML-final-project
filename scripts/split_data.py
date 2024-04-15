@@ -1,23 +1,5 @@
 import random
 import argparse
-# def shuffle_and_split_files(file1_path, file2_path, output_paths, proportions):
-    # Read the contents of both files
-   
-
-# the paths to the original files and the output files
-# file1_path = '/Users/jiasenjing/Desktop/code/ml/projcet/ted_train_en-de.raw.de'
-# file2_path = '/Users/jiasenjing/Desktop/code/ml/projcet/ted_train_en-de.raw.en'
-# output_paths = [
-#     ('/Users/jiasenjing/Desktop/code/ml/projcet/train.de', '/Users/jiasenjing/Desktop/code/ml/projcet/train.en'), # output for train
-#     ('/Users/jiasenjing/Desktop/code/ml/projcet/val.de', '/Users/jiasenjing/Desktop/code/ml/projcet/val.en'), # output for validation
-#     ('/Users/jiasenjing/Desktop/code/ml/projcet/silver.de', '/Users/jiasenjing/Desktop/code/ml/projcet/silver.en'), # output for silver
-#     ('/Users/jiasenjing/Desktop/code/ml/projcet/test.de', '/Users/jiasenjing/Desktop/code/ml/projcet/test.en') # output for test
-# ]
-
-# Define the proportions for train, val, silver, and test in that order
-# proportions = [0.6, 0.2, 0.1, 0.1]  
-
-# shuffle_and_split_files(file1_path, file2_path, output_paths, proportions)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
