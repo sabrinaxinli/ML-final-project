@@ -1,0 +1,361 @@
+======= en-ar =======
+#sentence #tokens
+    1958    26837 /en-ar/raw/ted_dev_en-ar.raw.ar
+    1958    32156 /en-ar/raw/ted_dev_en-ar.raw.en
+    1982    24824 /en-ar/raw/ted_test1_en-ar.raw.ar
+    1982    30606 /en-ar/raw/ted_test1_en-ar.raw.en
+  175377  2553500 /en-ar/raw/ted_train_en-ar.raw.ar
+  175377  3070747 /en-ar/raw/ted_train_en-ar.raw.en
+    1958    30334 /en-ar/tok/ted_dev_en-ar.tok.ar
+    1958    38438 /en-ar/tok/ted_dev_en-ar.tok.en
+    1958     4183 /en-ar/tok/ted_dev_en-ar.tok.seekvideo
+    1982    28636 /en-ar/tok/ted_test1_en-ar.tok.ar
+    1982    36499 /en-ar/tok/ted_test1_en-ar.tok.en
+    1982     3705 /en-ar/tok/ted_test1_en-ar.tok.seekvideo
+  175377  2854741 /en-ar/tok/ted_train_en-ar.tok.ar
+  174327  2772024 /en-ar/tok/ted_train_en-ar.tok.clean.ar
+  174327  3514488 /en-ar/tok/ted_train_en-ar.tok.clean.en
+  174327   392487 /en-ar/tok/ted_train_en-ar.tok.clean.seekvideo
+  175377  3619437 /en-ar/tok/ted_train_en-ar.tok.en
+======= en-bg =======
+#sentence #tokens
+    1958    29193 /en-bg/raw/ted_dev_en-bg.raw.bg
+    1958    32156 /en-bg/raw/ted_dev_en-bg.raw.en
+    1982    27890 /en-bg/raw/ted_test1_en-bg.raw.bg
+    1982    30606 /en-bg/raw/ted_test1_en-bg.raw.en
+  165350  2601951 /en-bg/raw/ted_train_en-bg.raw.bg
+  165350  2883185 /en-bg/raw/ted_train_en-bg.raw.en
+    1958    35141 /en-bg/tok/ted_dev_en-bg.tok.bg
+    1958    38438 /en-bg/tok/ted_dev_en-bg.tok.en
+    1958     4183 /en-bg/tok/ted_dev_en-bg.tok.seekvideo
+    1982    33631 /en-bg/tok/ted_test1_en-bg.tok.bg
+    1982    36499 /en-bg/tok/ted_test1_en-bg.tok.en
+    1982     3705 /en-bg/tok/ted_test1_en-bg.tok.seekvideo
+  165350  3112551 /en-bg/tok/ted_train_en-bg.tok.bg
+  164336  3021084 /en-bg/tok/ted_train_en-bg.tok.clean.bg
+  164336  3298234 /en-bg/tok/ted_train_en-bg.tok.clean.en
+  164336   369301 /en-bg/tok/ted_train_en-bg.tok.clean.seekvideo
+  165350  3398860 /en-bg/tok/ted_train_en-bg.tok.en
+======= en-cs =======
+#sentence #tokens
+    1958    27836 /en-cs/raw/ted_dev_en-cs.raw.cs
+    1958    32156 /en-cs/raw/ted_dev_en-cs.raw.en
+    1982    26033 /en-cs/raw/ted_test1_en-cs.raw.cs
+    1982    30606 /en-cs/raw/ted_test1_en-cs.raw.en
+   84247  1181064 /en-cs/raw/ted_train_en-cs.raw.cs
+   84247  1426122 /en-cs/raw/ted_train_en-cs.raw.en
+    1958    33603 /en-cs/tok/ted_dev_en-cs.tok.cs
+    1958    38438 /en-cs/tok/ted_dev_en-cs.tok.en
+    1958     4183 /en-cs/tok/ted_dev_en-cs.tok.seekvideo
+    1982    31590 /en-cs/tok/ted_test1_en-cs.tok.cs
+    1982    36499 /en-cs/tok/ted_test1_en-cs.tok.en
+    1982     3705 /en-cs/tok/ted_test1_en-cs.tok.seekvideo
+   83831  1386681 /en-cs/tok/ted_train_en-cs.tok.clean.cs
+   83831  1640047 /en-cs/tok/ted_train_en-cs.tok.clean.en
+   83831   188823 /en-cs/tok/ted_train_en-cs.tok.clean.seekvideo
+   84247  1421250 /en-cs/tok/ted_train_en-cs.tok.cs
+   84247  1681141 /en-cs/tok/ted_train_en-cs.tok.en
+======= en-de =======
+#sentence #tokens
+    1958    31132 /en-de/raw/ted_dev_en-de.raw.de
+    1958    32156 /en-de/raw/ted_dev_en-de.raw.en
+    1982    29764 /en-de/raw/ted_test1_en-de.raw.de
+    1982    30606 /en-de/raw/ted_test1_en-de.raw.en
+  152606  2486757 /en-de/raw/ted_train_en-de.raw.de
+  152606  2658689 /en-de/raw/ted_train_en-de.raw.en
+    1958    37117 /en-de/tok/ted_dev_en-de.tok.de
+    1958    38438 /en-de/tok/ted_dev_en-de.tok.en
+    1958     4183 /en-de/tok/ted_dev_en-de.tok.seekvideo
+    1982    35209 /en-de/tok/ted_test1_en-de.tok.de
+    1982    36499 /en-de/tok/ted_test1_en-de.tok.en
+    1982     3705 /en-de/tok/ted_test1_en-de.tok.seekvideo
+  151627  2849907 /en-de/tok/ted_train_en-de.tok.clean.de
+  151627  3037569 /en-de/tok/ted_train_en-de.tok.clean.en
+  151627   339599 /en-de/tok/ted_train_en-de.tok.clean.seekvideo
+  152606  2940285 /en-de/tok/ted_train_en-de.tok.de
+  152606  3134432 /en-de/tok/ted_train_en-de.tok.en
+======= en-fa =======
+#sentence #tokens
+    1958    32156 /en-fa/raw/ted_dev_en-fa.raw.en
+    1958    36472 /en-fa/raw/ted_dev_en-fa.raw.fa
+    1982    30606 /en-fa/raw/ted_test1_en-fa.raw.en
+    1982    33507 /en-fa/raw/ted_test1_en-fa.raw.fa
+  116525  2030390 /en-fa/raw/ted_train_en-fa.raw.en
+  116525  2397640 /en-fa/raw/ted_train_en-fa.raw.fa
+    1958    38438 /en-fa/tok/ted_dev_en-fa.tok.en
+    1958    41588 /en-fa/tok/ted_dev_en-fa.tok.fa
+    1958     4183 /en-fa/tok/ted_dev_en-fa.tok.seekvideo
+    1982    36499 /en-fa/tok/ted_test1_en-fa.tok.en
+    1982    39223 /en-fa/tok/ted_test1_en-fa.tok.fa
+    1982     3705 /en-fa/tok/ted_test1_en-fa.tok.seekvideo
+  114088  2238052 /en-fa/tok/ted_train_en-fa.tok.clean.en
+  114088  2563806 /en-fa/tok/ted_train_en-fa.tok.clean.fa
+  114088   255306 /en-fa/tok/ted_train_en-fa.tok.clean.seekvideo
+  116525  2389884 /en-fa/tok/ted_train_en-fa.tok.en
+  116525  2811209 /en-fa/tok/ted_train_en-fa.tok.fa
+======= en-fr =======
+#sentence #tokens
+    1958    32156 /en-fr/raw/ted_dev_en-fr.raw.en
+    1958    33666 /en-fr/raw/ted_dev_en-fr.raw.fr
+    1982    30606 /en-fr/raw/ted_test1_en-fr.raw.en
+    1982    32582 /en-fr/raw/ted_test1_en-fr.raw.fr
+  157977  2764298 /en-fr/raw/ted_train_en-fr.raw.en
+  157977  2901731 /en-fr/raw/ted_train_en-fr.raw.fr
+    1958    38438 /en-fr/tok/ted_dev_en-fr.tok.en
+    1958    40963 /en-fr/tok/ted_dev_en-fr.tok.fr
+    1958     4183 /en-fr/tok/ted_dev_en-fr.tok.seekvideo
+    1982    36499 /en-fr/tok/ted_test1_en-fr.tok.en
+    1982    39493 /en-fr/tok/ted_test1_en-fr.tok.fr
+    1982     3705 /en-fr/tok/ted_test1_en-fr.tok.seekvideo
+  156621  3134726 /en-fr/tok/ted_train_en-fr.tok.clean.en
+  156621  3345346 /en-fr/tok/ted_train_en-fr.tok.clean.fr
+  156621   349493 /en-fr/tok/ted_train_en-fr.tok.clean.seekvideo
+  157977  3259365 /en-fr/tok/ted_train_en-fr.tok.en
+  157977  3479646 /en-fr/tok/ted_train_en-fr.tok.fr
+======= en-he =======
+#sentence #tokens
+    1958    32156 /en-he/raw/ted_dev_en-he.raw.en
+    1958    24503 /en-he/raw/ted_dev_en-he.raw.he
+    1982    30606 /en-he/raw/ted_test1_en-he.raw.en
+    1982    22677 /en-he/raw/ted_test1_en-he.raw.he
+  188510  3309058 /en-he/raw/ted_train_en-he.raw.en
+  188510  2484120 /en-he/raw/ted_train_en-he.raw.he
+    1958    38438 /en-he/tok/ted_dev_en-he.tok.en
+    1958    29651 /en-he/tok/ted_dev_en-he.tok.he
+    1958     4183 /en-he/tok/ted_dev_en-he.tok.seekvideo
+    1982    36499 /en-he/tok/ted_test1_en-he.tok.en
+    1982    27380 /en-he/tok/ted_test1_en-he.tok.he
+    1982     3705 /en-he/tok/ted_test1_en-he.tok.seekvideo
+  187353  3784287 /en-he/tok/ted_train_en-he.tok.clean.en
+  187353  2899907 /en-he/tok/ted_train_en-he.tok.clean.he
+  187353   423451 /en-he/tok/ted_train_en-he.tok.clean.seekvideo
+  188510  3900043 /en-he/tok/ted_train_en-he.tok.en
+  188510  2987248 /en-he/tok/ted_train_en-he.tok.he
+======= en-hu =======
+#sentence #tokens
+    1958    32156 /en-hu/raw/ted_dev_en-hu.raw.en
+    1958    25539 /en-hu/raw/ted_dev_en-hu.raw.hu
+    1982    30606 /en-hu/raw/ted_test1_en-hu.raw.en
+    1982    24218 /en-hu/raw/ted_test1_en-hu.raw.hu
+  112801  1960824 /en-hu/raw/ted_train_en-hu.raw.en
+  112801  1545634 /en-hu/raw/ted_train_en-hu.raw.hu
+    1958    38438 /en-hu/tok/ted_dev_en-hu.tok.en
+    1958    31660 /en-hu/tok/ted_dev_en-hu.tok.hu
+    1958     4183 /en-hu/tok/ted_dev_en-hu.tok.seekvideo
+    1982    36499 /en-hu/tok/ted_test1_en-hu.tok.en
+    1982    29925 /en-hu/tok/ted_test1_en-hu.tok.hu
+    1982     3705 /en-hu/tok/ted_test1_en-hu.tok.seekvideo
+  112142  2243964 /en-hu/tok/ted_train_en-hu.tok.clean.en
+  112142  1844573 /en-hu/tok/ted_train_en-hu.tok.clean.hu
+  112142   255216 /en-hu/tok/ted_train_en-hu.tok.clean.seekvideo
+  112801  2309310 /en-hu/tok/ted_train_en-hu.tok.en
+  112801  1897322 /en-hu/tok/ted_train_en-hu.tok.hu
+======= en-ja =======
+#sentence #tokens
+    1958    32156 /en-ja/raw/ted_dev_en-ja.raw.en
+    1958     5274 /en-ja/raw/ted_dev_en-ja.raw.ja
+    1982    30606 /en-ja/raw/ted_test1_en-ja.raw.en
+    1982     4270 /en-ja/raw/ted_test1_en-ja.raw.ja
+  154595  2692181 /en-ja/raw/ted_train_en-ja.raw.en
+  154595   493851 /en-ja/raw/ted_train_en-ja.raw.ja
+    1958    38438 /en-ja/tok/ted_dev_en-ja.tok.en
+    1958    47493 /en-ja/tok/ted_dev_en-ja.tok.ja
+    1958     4183 /en-ja/tok/ted_dev_en-ja.tok.seekvideo
+    1982    36499 /en-ja/tok/ted_test1_en-ja.tok.en
+    1982    49140 /en-ja/tok/ted_test1_en-ja.tok.ja
+    1982     3705 /en-ja/tok/ted_test1_en-ja.tok.seekvideo
+  152115  2983438 /en-ja/tok/ted_train_en-ja.tok.clean.en
+  152115  3691094 /en-ja/tok/ted_train_en-ja.tok.clean.ja
+  152115   337335 /en-ja/tok/ted_train_en-ja.tok.clean.seekvideo
+  154595  3172884 /en-ja/tok/ted_train_en-ja.tok.en
+  154595  3941983 /en-ja/tok/ted_train_en-ja.tok.ja
+======= en-id =======
+#sentence #tokens
+    1958    32156 /en-id/raw/ted_dev_en-id.raw.en
+    1958    27943 /en-id/raw/ted_dev_en-id.raw.id
+    1982    30606 /en-id/raw/ted_test1_en-id.raw.en
+    1982    26999 /en-id/raw/ted_test1_en-id.raw.id
+   77022  1308813 /en-id/raw/ted_train_en-id.raw.en
+   77022  1143856 /en-id/raw/ted_train_en-id.raw.id
+    1958    38438 /en-id/tok/ted_dev_en-id.tok.en
+    1958    32867 /en-id/tok/ted_dev_en-id.tok.id
+    1958     4183 /en-id/tok/ted_dev_en-id.tok.seekvideo
+    1982    36499 /en-id/tok/ted_test1_en-id.tok.en
+    1982    31832 /en-id/tok/ted_test1_en-id.tok.id
+    1982     3705 /en-id/tok/ted_test1_en-id.tok.seekvideo
+   76644  1500921 /en-id/tok/ted_train_en-id.tok.clean.en
+   76644  1291671 /en-id/tok/ted_train_en-id.tok.clean.id
+   76644   175572 /en-id/tok/ted_train_en-id.tok.clean.seekvideo
+   77022  1538429 /en-id/tok/ted_train_en-id.tok.en
+   77022  1323349 /en-id/tok/ted_train_en-id.tok.id
+======= en-ko =======
+#sentence #tokens
+    1958    32156 /en-ko/raw/ted_dev_en-ko.raw.en
+    1958    22295 /en-ko/raw/ted_dev_en-ko.raw.ko
+    1982    30606 /en-ko/raw/ted_test1_en-ko.raw.en
+    1982    21576 /en-ko/raw/ted_test1_en-ko.raw.ko
+  166215  2910758 /en-ko/raw/ted_train_en-ko.raw.en
+  166215  2026434 /en-ko/raw/ted_train_en-ko.raw.ko
+    1958    38438 /en-ko/tok/ted_dev_en-ko.tok.en
+    1958    46807 /en-ko/tok/ted_dev_en-ko.tok.ko
+    1958     4183 /en-ko/tok/ted_dev_en-ko.tok.seekvideo
+    1982    36499 /en-ko/tok/ted_test1_en-ko.tok.en
+    1982    45715 /en-ko/tok/ted_test1_en-ko.tok.ko
+    1982     3705 /en-ko/tok/ted_test1_en-ko.tok.seekvideo
+  163721  3232100 /en-ko/tok/ted_train_en-ko.tok.clean.en
+  163721  3962194 /en-ko/tok/ted_train_en-ko.tok.clean.ko
+  163721   361739 /en-ko/tok/ted_train_en-ko.tok.clean.seekvideo
+  166215  3431726 /en-ko/tok/ted_train_en-ko.tok.en
+  166215  4216496 /en-ko/tok/ted_train_en-ko.tok.ko
+======= en-pl =======
+#sentence #tokens
+    1958    32156 /en-pl/raw/ted_dev_en-pl.raw.en
+    1958    24168 /en-pl/raw/ted_dev_en-pl.raw.pl
+    1982    30606 /en-pl/raw/ted_test1_en-pl.raw.en
+    1982    24476 /en-pl/raw/ted_test1_en-pl.raw.pl
+  155440  2706626 /en-pl/raw/ted_train_en-pl.raw.en
+  155440  2012497 /en-pl/raw/ted_train_en-pl.raw.pl
+    1958    38438 /en-pl/tok/ted_dev_en-pl.tok.en
+    1958    29540 /en-pl/tok/ted_dev_en-pl.tok.pl
+    1958     4183 /en-pl/tok/ted_dev_en-pl.tok.seekvideo
+    1982    36499 /en-pl/tok/ted_test1_en-pl.tok.en
+    1982    29835 /en-pl/tok/ted_test1_en-pl.tok.pl
+    1982     3705 /en-pl/tok/ted_test1_en-pl.tok.seekvideo
+  154494  3097833 /en-pl/tok/ted_train_en-pl.tok.clean.en
+  154494  2366946 /en-pl/tok/ted_train_en-pl.tok.clean.pl
+  154494   344395 /en-pl/tok/ted_train_en-pl.tok.clean.seekvideo
+  155440  3192892 /en-pl/tok/ted_train_en-pl.tok.en
+  155440  2437751 /en-pl/tok/ted_train_en-pl.tok.pl
+======= en-pt =======
+#sentence #tokens
+    1958    32156 /en-pt/raw/ted_dev_en-pt.raw.en
+    1958    31269 /en-pt/raw/ted_dev_en-pt.raw.pt
+    1982    30606 /en-pt/raw/ted_test1_en-pt.raw.en
+    1982    29972 /en-pt/raw/ted_test1_en-pt.raw.pt
+  153357  2683202 /en-pt/raw/ted_train_en-pt.raw.en
+  153357  2584287 /en-pt/raw/ted_train_en-pt.raw.pt
+    1958    38438 /en-pt/tok/ted_dev_en-pt.tok.en
+    1958    36657 /en-pt/tok/ted_dev_en-pt.tok.pt
+    1958     4183 /en-pt/tok/ted_dev_en-pt.tok.seekvideo
+    1982    36499 /en-pt/tok/ted_test1_en-pt.tok.en
+    1982    35017 /en-pt/tok/ted_test1_en-pt.tok.pt
+    1982     3705 /en-pt/tok/ted_test1_en-pt.tok.seekvideo
+  152341  3063971 /en-pt/tok/ted_train_en-pt.tok.clean.en
+  152341  2899111 /en-pt/tok/ted_train_en-pt.tok.clean.pt
+  152341   340599 /en-pt/tok/ted_train_en-pt.tok.clean.seekvideo
+  153357  3164531 /en-pt/tok/ted_train_en-pt.tok.en
+  153357  2994516 /en-pt/tok/ted_train_en-pt.tok.pt
+======= en-ro =======
+#sentence #tokens
+    1958    32156 /en-ro/raw/ted_dev_en-ro.raw.en
+    1958    30492 /en-ro/raw/ted_dev_en-ro.raw.ro
+    1982    30606 /en-ro/raw/ted_test1_en-ro.raw.en
+    1982    29935 /en-ro/raw/ted_test1_en-ro.raw.ro
+  162332  2845221 /en-ro/raw/ted_train_en-ro.raw.en
+  162332  2678759 /en-ro/raw/ted_train_en-ro.raw.ro
+    1958    38438 /en-ro/tok/ted_dev_en-ro.tok.en
+    1958    35648 /en-ro/tok/ted_dev_en-ro.tok.ro
+    1958     4183 /en-ro/tok/ted_dev_en-ro.tok.seekvideo
+    1982    36499 /en-ro/tok/ted_test1_en-ro.tok.en
+    1982    34835 /en-ro/tok/ted_test1_en-ro.tok.ro
+    1982     3705 /en-ro/tok/ted_test1_en-ro.tok.seekvideo
+  161291  3249897 /en-ro/tok/ted_train_en-ro.tok.clean.en
+  161291  2998886 /en-ro/tok/ted_train_en-ro.tok.clean.ro
+  161291   363218 /en-ro/tok/ted_train_en-ro.tok.clean.seekvideo
+  162332  3352813 /en-ro/tok/ted_train_en-ro.tok.en
+  162332  3091131 /en-ro/tok/ted_train_en-ro.tok.ro
+======= en-ru =======
+#sentence #tokens
+    1958    32156 /en-ru/raw/ted_dev_en-ru.raw.en
+    1958    26758 /en-ru/raw/ted_dev_en-ru.raw.ru
+    1982    30606 /en-ru/raw/ted_test1_en-ru.raw.en
+    1982    25598 /en-ru/raw/ted_test1_en-ru.raw.ru
+  181465  3196344 /en-ru/raw/ted_train_en-ru.raw.en
+  181465  2634242 /en-ru/raw/ted_train_en-ru.raw.ru
+     1958     38438 /en-ru/tok/ted_dev_en-ru.tok.en
+     1958     32956 /en-ru/tok/ted_dev_en-ru.tok.ru
+     1958      4183 /en-ru/tok/ted_dev_en-ru.tok.seekvideo
+     1982     36499 /en-ru/tok/ted_test1_en-ru.tok.en
+     1982     31575 /en-ru/tok/ted_test1_en-ru.tok.ru
+     1982      3705 /en-ru/tok/ted_test1_en-ru.tok.seekvideo
+   180316   3650938 /en-ru/tok/ted_train_en-ru.tok.clean.en
+   180316   3119707 /en-ru/tok/ted_train_en-ru.tok.clean.ru
+   180316    411663 /en-ru/tok/ted_train_en-ru.tok.clean.seekvideo
+   181465   3765260 /en-ru/tok/ted_train_en-ru.tok.en
+   181465   3217217 /en-ru/tok/ted_train_en-ru.tok.ru
+======= en-tr =======
+#sentence #tokens
+    1958    32156 /en-tr/raw/ted_dev_en-tr.raw.en
+    1958    23184 /en-tr/raw/ted_dev_en-tr.raw.tr
+    1982    30606 /en-tr/raw/ted_test1_en-tr.raw.en
+    1982    22351 /en-tr/raw/ted_test1_en-tr.raw.tr
+  142666  2469677 /en-tr/raw/ted_train_en-tr.raw.en
+  142666  1789075 /en-tr/raw/ted_train_en-tr.raw.tr
+    1958    38438 /en-tr/tok/ted_dev_en-tr.tok.en
+    1958     4183 /en-tr/tok/ted_dev_en-tr.tok.seekvideo
+    1958    28355 /en-tr/tok/ted_dev_en-tr.tok.tr
+    1982    36499 /en-tr/tok/ted_test1_en-tr.tok.en
+    1982     3705 /en-tr/tok/ted_test1_en-tr.tok.seekvideo
+    1982    27900 /en-tr/tok/ted_test1_en-tr.tok.tr
+  141814  2827899 /en-tr/tok/ted_train_en-tr.tok.clean.en
+  141814   317888 /en-tr/tok/ted_train_en-tr.tok.clean.seekvideo
+  141814  2113059 /en-tr/tok/ted_train_en-tr.tok.clean.tr
+  142666  2913421 /en-tr/tok/ted_train_en-tr.tok.en
+  142666  2175070 /en-tr/tok/ted_train_en-tr.tok.tr
+======= en-uk =======
+#sentence #tokens
+    1958    32156 /en-uk/raw/ted_dev_en-uk.raw.en
+    1958    26845 /en-uk/raw/ted_dev_en-uk.raw.uk
+    1982    30606 /en-uk/raw/ted_test1_en-uk.raw.en
+    1982    26149 /en-uk/raw/ted_test1_en-uk.raw.uk
+   76742  1332736 /en-uk/raw/ted_train_en-uk.raw.en
+   76742  1094775 /en-uk/raw/ted_train_en-uk.raw.uk
+    1958    38438 /en-uk/tok/ted_dev_en-uk.tok.en
+    1958     4183 /en-uk/tok/ted_dev_en-uk.tok.seekvideo
+    1958    33483 /en-uk/tok/ted_dev_en-uk.tok.uk
+    1982    36499 /en-uk/tok/ted_test1_en-uk.tok.en
+    1982     3705 /en-uk/tok/ted_test1_en-uk.tok.seekvideo
+    1982    32444 /en-uk/tok/ted_test1_en-uk.tok.uk
+   76280  1523874 /en-uk/tok/ted_train_en-uk.tok.clean.en
+   76280   175187 /en-uk/tok/ted_train_en-uk.tok.clean.seekvideo
+   76280  1314709 /en-uk/tok/ted_train_en-uk.tok.clean.uk
+   76742  1570131 /en-uk/tok/ted_train_en-uk.tok.en
+   76742  1354640 /en-uk/tok/ted_train_en-uk.tok.uk
+======= en-vi =======
+#sentence #tokens
+    1958    32156 /en-vi/raw/ted_dev_en-vi.raw.en
+    1958    42187 /en-vi/raw/ted_dev_en-vi.raw.vi
+    1982    30606 /en-vi/raw/ted_test1_en-vi.raw.en
+    1982    40087 /en-vi/raw/ted_test1_en-vi.raw.vi
+  110719  1916420 /en-vi/raw/ted_train_en-vi.raw.en
+  110719  2514444 /en-vi/raw/ted_train_en-vi.raw.vi
+    1958    38438 /en-vi/tok/ted_dev_en-vi.tok.en
+    1958     4183 /en-vi/tok/ted_dev_en-vi.tok.seekvideo
+    1958    51622 /en-vi/tok/ted_dev_en-vi.tok.vi
+    1982    36499 /en-vi/tok/ted_test1_en-vi.tok.en
+    1982     3705 /en-vi/tok/ted_test1_en-vi.tok.seekvideo
+    1982    48466 /en-vi/tok/ted_test1_en-vi.tok.vi
+  108844  2117433 /en-vi/tok/ted_train_en-vi.tok.clean.en
+  108844   245207 /en-vi/tok/ted_train_en-vi.tok.clean.seekvideo
+  108844  2620238 /en-vi/tok/ted_train_en-vi.tok.clean.vi
+  110719  2253218 /en-vi/tok/ted_train_en-vi.tok.en
+  110719  2809587 /en-vi/tok/ted_train_en-vi.tok.vi
+======= en-zh =======
+#sentence #tokens
+    1958    32156 /en-zh/raw/ted_dev_en-zh.raw.en
+    1958     4415 /en-zh/raw/ted_dev_en-zh.raw.zh
+    1982    30606 /en-zh/raw/ted_test1_en-zh.raw.en
+    1982     3866 /en-zh/raw/ted_test1_en-zh.raw.zh
+  170341  2977555 /en-zh/raw/ted_train_en-zh.raw.en
+  170341   418045 /en-zh/raw/ted_train_en-zh.raw.zh
+    1958    38438 /en-zh/tok/ted_dev_en-zh.tok.en
+    1958     4183 /en-zh/tok/ted_dev_en-zh.tok.seekvideo
+    1958    35543 /en-zh/tok/ted_dev_en-zh.tok.zh
+    1982    36499 /en-zh/tok/ted_test1_en-zh.tok.en
+    1982     3705 /en-zh/tok/ted_test1_en-zh.tok.seekvideo
+    1982    33397 /en-zh/tok/ted_test1_en-zh.tok.zh
+  169178  3398748 /en-zh/tok/ted_train_en-zh.tok.clean.en
+  169178   380088 /en-zh/tok/ted_train_en-zh.tok.clean.seekvideo
+  169178  3014286 /en-zh/tok/ted_train_en-zh.tok.clean.zh
+  170341  3511181 /en-zh/tok/ted_train_en-zh.tok.en
+  170341  3114717 /en-zh/tok/ted_train_en-zh.tok.zh
