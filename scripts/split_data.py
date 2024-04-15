@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--file1_path", help = "File 1 path")
     parser.add_argument("--file2_path", help = "file 2 path")
     parser.add_argument("--output_paths", nargs = "+", help = "Output paths as list (assumed to be paired)")
-    parser.add_argument("--proportions", type = int, nargs = "+", help = "list of proportions corresponding to split sizes")
+    parser.add_argument("--proportions", type = float, nargs = "+", help = "list of proportions corresponding to split sizes")
     args, rest = parser.parse_known_args()
 
     if len(args.proportions) != (len(args.output_paths) // 2):
