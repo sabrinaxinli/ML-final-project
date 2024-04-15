@@ -62,9 +62,9 @@ class Vocab:
 
 ######################################################################
 
-def add_lines(input_file, vcb):
+def add_lines(input_file, vcb, encoding):
     lines = []
-    with open(input_file, "r") as input:
+    with open(input_file, "r", encoding=encoding) as input:
         for line in input:
             vcb.add_sentence(line)
             lines.append(line)
@@ -72,10 +72,10 @@ def add_lines(input_file, vcb):
 
 ######################################################################
 
-def make_vocab(lang_code, input_file):
+def make_vocab(lang_code, input_file, encoding):
     vocab = Vocab(lang_code)
 
-    lines, vcb = add_lines(input_file, vocab)
+    lines, vcb = add_lines(input_file, vocab, encoding)
 
     logging.info('%s (tgt) vocab size: %s', vocab.lang_code, vocab.n_words)
 
@@ -120,12 +120,13 @@ def get_batches(sentences, batch_size):
 
 def write_out_embeddings(model, tokenizer, src_sentences, tgt_sentences, output_path, batch_size, device="cpu"):
     model.to(device)
-    tokenizer.to(device)
     sentence_pairs = list(zip(src_sentences, tgt_sentences))
     batches = get_batches(sentence_pairs, batch_size)
     
     with open(output_path, "w") as output:
-        for (src_batch, tgt_batch) in batches:
+        print(f"Num batches: {len(batches)}")
+        for i, batch in enumerate(batches):
+            (src_batch, tgt_batch) = zip(*batch)
             # Pass source sentences through BERT
             tokens = tokenizer(src_batch, padding=True, truncation=True, return_tensors="pt", max_length=MAX_TOKS)
             bert_output = model(input_ids = tokens["input_ids"].to(device),
@@ -145,6 +146,8 @@ def write_out_embeddings(model, tokenizer, src_sentences, tgt_sentences, output_
             datapoints = list(zip(s_embeddings, tgt_batch))
             for (embedding, tgt_sent) in datapoints:
                 output.write(json.dumps((embedding.tolist(), tgt_sent)) + "\n")
+            
+            print(f"Done with batch {i}")
 
 ######################################################################
 def id_list_from_sentence(vocab, sentence):
@@ -167,7 +170,8 @@ if __name__ == "__main__":
     parser.add_argument("--src_lang", default="eng",
             help='Source (input) language code, e.g. "fr"')
     parser.add_argument("--tgt_lang", default="ger",
-            help='Source (input) language code, e.g. "en"')
+            help='Source (input) language code, e.g. "en"'
+               
     parser.add_argument("--src_bitext", help="source bitext should have one sentence per line")
     parser.add_argument("--tgt_bitext", help="tgt bitext should have one sentence per line, same length as src_bitext")
     parser.add_argument("--max_samples", type = int, help="Maximum number of datapoints")
@@ -175,6 +179,7 @@ if __name__ == "__main__":
     parser.add_argument("--parallel_output", help="src sentence ||| tgt sentence")
     parser.add_argument("--emb_output",help='output file for test translations')
     parser.add_argument("--batch_size", type = int, help='output file for test translations')
+    parser.add_argument("--encoding", default = "utf-8", help = "encoding type")
     
     args, rest = parser.parse_known_args()
 
@@ -183,25 +188,26 @@ if __name__ == "__main__":
     else:
         device = "cpu"
 
+    print(device)
     torch.cuda.empty_cache()
     
-    src_lines, src_vocab = make_vocab(args.src_lang, args.src_bitext)
-    tgt_lines, tgt_vocab = make_vocab(args.tgt_lang, args.tgt_bitext)
+    src_lines, src_vocab = make_vocab(args.src_lang, args.src_bitext, args.encoding)
+    tgt_lines, tgt_vocab = make_vocab(args.tgt_lang, args.tgt_bitext, args.encoding)
     
     src_lines = src_lines[:args.max_samples]
     tgt_lines = tgt_lines[:args.max_samples]
 
     vcbs = {"src": src_vocab.to_dict(), "tgt": tgt_vocab.to_dict()}
-    with open(args.vcbs, "w") as vocab_file:
+    with open(args.vcbs, "w", encoding=args.encoding) as vocab_file:
         json.dump(vcbs, vocab_file)
 
-    with open(args.parallel_output, "w") as parallel_file:
+    with open(args.parallel_output, "w", encoding=args.encoding) as parallel_file:
         for (src_line, tgt_line) in zip(src_lines, tgt_lines):
             parallel_file.write(json.dumps((src_line, tgt_line)) + "\n")
 
     tgt_id_lists = []
     for tgt_line in tgt_lines:
-        tgt_id_lists.append(id_list_from_sentence(tgt_line))
+        tgt_id_lists.append(id_list_from_sentence(tgt_vocab, tgt_line))
     
     assert len(src_lines) == len(tgt_lines)
     assert len(src_lines) == len(tgt_id_lists)
