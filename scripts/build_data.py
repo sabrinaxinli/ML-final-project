@@ -21,21 +21,19 @@ MAX_TOKS = 512
 class Vocab:
     """ This class handles the mapping between the words and their indicies
     """
-    def __init__(self, lang_code, file=None):
-        if file:
-            with open(file, "r") as fp:
-                vocab_dict = json.load(fp)
-                self.lang_code = vocab_dict["lang_code"]
-                self.word2index = vocab_dict["word2index"]
-                self.word2count = vocab_dict["word2count"]
-                self.index2word = vocab_dict["index2word"]
-                self.n_words = vocab_dict["n_words"]
+    def __init__(self, lang_code=None, vocab_dict=None):
+        if vocab_dict:
+            self.lang_code = vocab_dict["lang_code"]
+            self.word2index = vocab_dict["word2index"]
+            self.word2count = vocab_dict["word2count"]
+            self.index2word = vocab_dict["index2word"]
+            self.n_words = vocab_dict["n_words"]
         else:
-                self.lang_code = lang_code
-                self.word2index = {}
-                self.word2count = {}
-                self.index2word = {SOS_index: SOS_token, EOS_index: EOS_token}
-                self.n_words = 2  # Count SOS and EOS
+            self.lang_code = lang_code
+            self.word2index = {}
+            self.word2count = {}
+            self.index2word = {SOS_index: SOS_token, EOS_index: EOS_token}
+            self.n_words = 2  # Count SOS and EOS
 
     def add_sentence(self, sentence):
         for word in sentence.split(' '):
