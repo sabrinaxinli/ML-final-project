@@ -165,11 +165,8 @@ def id_list_from_sentence(vocab, sentence):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--src_lang", default="eng",
-            help='Source (input) language code, e.g. "fr"')
-    parser.add_argument("--tgt_lang", default="ger",
-            help='Source (input) language code, e.g. "en"'
-               
+    parser.add_argument("--src_lang", default="eng", help='Source (input) language code, e.g. "fr"')
+    parser.add_argument("--tgt_lang", default="ger", help="Target (output) language code, e.g. 'en'")
     parser.add_argument("--src_bitext", help="source bitext should have one sentence per line")
     parser.add_argument("--tgt_bitext", help="tgt bitext should have one sentence per line, same length as src_bitext")
     parser.add_argument("--max_samples", type = int, help="Maximum number of datapoints")

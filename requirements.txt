@@ -1,2 +1,6 @@
 steamroller
 transformers
+jsonlines
+torch
+torchvision
+torchaudio

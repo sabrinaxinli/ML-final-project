@@ -26,7 +26,9 @@ vars.AddVariables(
     ("TGT_VCB", "", ""),
     ("EMB_FILE", "", ""),
     ("PROPORTIONS", "", [0.6, 0.2, 0.1, 0.1]), # train, val, silver, test
-    ("DATA_SPLITS", "", [""])
+    ("DATA_SPLITS", "", [""]),
+    ("USE_GRID", "", ""),
+    ("MODEL_PATH", "", "")
 )
 
 # Methods on the environment object are used all over the place, but it mostly serves to
@@ -45,10 +47,13 @@ env = Environment(
     BUILDERS={
         "BuildData" : Builder(
             # action="python scripts/create_data.py --data_path ${SOURCES} --output ${TARGETS} --granularity $SEGMENT_BY_PG",
-            action="python scripts/build_data.py --src_lang ${SRC_LANG} --tgt_lang ${TGT_LANG} --src_bitext ${SRC_BITEXT} --tgt_bitext ${TGT_BITEXT} --max_samples ${MAX_SAMPLES} --vcbs ${VOCABS} --parallel_output ${PARALLEL} --emb_output ${EMB_OUT} --batch_size ${BATCH_SIZE}",
+            action = "python scripts/build_data.py --src_lang ${SRC_LANG} --tgt_lang ${TGT_LANG} --src_bitext ${SOURCES[0]} --tgt_bitext ${SOURCES[1]} --max_samples ${MAX_SAMPLES} --vcbs ${TARGETS[0]} --parallel_output ${TARGETS[1]} --emb_output ${TARGETS[2]} --batch_size ${BATCH_SIZE}",
         ),
         "SplitData" : Builder(
-            action="python scripts/split_data.py --file1_path ${FILE1} --file2_path ${FILE2} --output_paths ${OUTPUT} --proportions ${PROPORTIONS}"
+            action = "python scripts/split_data.py --file1_path ${SOURCES[0]} --file2_path ${SOURCES[1]} --output_paths ${TARGETS} --proportions ${PROPORTIONS}"
+        ),
+        "TrainModel": Builder(
+            action = "python scripts/train_model.py --hidden_size ${HIDDEN_SIZE} --n_iters ${N_ITERS} --vcbs ${VCBS} --print_every ${PRINT_EVERY} --checkpoint_every ${CHK_EVERY} --batch_size ${BATCH_SIZE} --initial_lr ${INIT_LR} --train_file ${SOURCES[0]} --dev_file ${SOURCES[1]} --silver_file ${SOURCES[2]} --test_file ${SOURCES[3]} --out_file ${TARGETS[0]} --load_checkpoint ${LOAD_CHK}"
         )
     }
 )
@@ -59,23 +64,32 @@ if env.get("VOCABS", None) and env.get("EMB_FILE", None) and env.get("PARALLEL",
     emb_file = env.File(env["EMB_FILE"])
     parallel_file = env.File(env["PARALLEL"])
 else:
-    vocabs, parallel, emb_out = env.BuildData(SRC_LANG = "eng",
-                                      TGT_LANG = "de",
-                                      SRC_BITEXT = "./multitarget-ted/en-de/raw/ted_train_en-de.raw.en",
-                                      TGT_BITEXT = "./multitarget-ted/en-de/raw/ted_train_en-de.raw.de",
-                                      MAX_SAMPLES = 100000,
-                                      VOCABS = "./work/eng-de.vcb",
-                                      PARALLEL= "./work/eng-de-parallel.jsonlines",
-                                      EMB_OUT = "./work/eng-de-embedded.jsonlines",
-                                      BATCH_SIZE=64)
-    split_outputs = env.SplitData(FILE1 = parallel,
-                                  FILE2 = emb_out,
-                                  OUTPUT = ["./work/train/en-de-parallel-train.jsonlines", "./work/train/en-de-embedded-train.jsonlines",
-                                            "./work/dev/en-de-parallel-train.jsonlines", "./work/dev/en-de-embedded-train.jsonlines",
-                                            "./work/silver/en-de-parallel-train.jsonlines", "./work/silver/en-de-embedded-train.jsonlines",
-                                            "./work/test/en-de-parallel-train.jsonlines", "./work/test/en-de-embedded-train.jsonlines"],
+    vocabs, parallel, emb_out = env.BuildData(source = ["./multitarget-ted/en-de/raw/ted_train_en-de.raw.en", "./multitarget-ted/en-de/raw/ted_train_en-de.raw.de"],
+                                              target = ["./work/eng-de.vcb", "./work/eng-de-parallel.jsonlines", "./work/eng-de-embedded.jsonlines"],
+                                              SRC_LANG = "eng",
+                                              TGT_LANG = "de",
+                                              MAX_SAMPLES = 100000,
+                                              BATCH_SIZE=64)
+    split_outputs = env.SplitData(source = [parallel, emb_out],
+                                  target = ["./work/train/en-de-parallel-train.jsonlines", "./work/dev/en-de-parallel-dev.jsonlines", "./work/silver/en-de-parallel-silver.jsonlines", "./work/test/en-de-parallel-test.jsonlines",
+                                            "./work/train/en-de-embedded-train.jsonlines", "./work/dev/en-de-embedded-dev.jsonlines", "./work/silver/en-de-embedded-silver.jsonlines", "./work/test/en-de-embedded-test.jsonlines"],
                                   PROPORTIONS = [0.6, 0.1, 0.2, 0.1]
                                   )
+    result = env.TrainModel(source = [split_outputs[4:]],
+                            target = ["./work/result/results.txt"],
+                            HIDDEN_SIZE = 768,
+                            N_ITERS = 1000,
+                            VCBS = vocabs,
+                            PRINT_EVERY = 1,
+                            CHK_EVERY = 1,
+                            BATCH_SIZE = 16,
+                            INIT_LR = 0.001,
+                            LOAD_CHK = "")
+   #  ["./work/train/en-de-parallel-train.jsonlines", "./work/train/en-de-embedded-train.jsonlines",
+   #  "./work/dev/en-de-parallel-train.jsonlines", "./work/dev/en-de-embedded-train.jsonlines",
+   #  "./work/silver/en-de-parallel-train.jsonlines", "./work/silver/en-de-embedded-train.jsonlines",
+   #  "./work/test/en-de-parallel-train.jsonlines", "./work/test/en-de-embedded-train.jsonlines"]
+    
     
 
 
