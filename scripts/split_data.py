@@ -1,5 +1,6 @@
 import random
 import argparse
+import gzip
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -11,10 +12,13 @@ if __name__ == "__main__":
 
     if len(args.proportions) != (len(args.output_paths) // 2):
         raise ValueError("Output size and proportion nums do not match")
-
-    with open(args.file1_path, "r", encoding="utf-8") as file1:
+    
+    print(args.file1_path)
+    with gzip.open(args.file1_path, "rb") as file1:
         lines1 = file1.readlines()
-    with open(args.file2_path, "r", encoding="utf-8") as file2:
+
+    print(args.file2_path)
+    with gzip.open(args.file2_path, "rb") as file2:
         lines2 = file2.readlines()
 
     #zip the lines from both files
@@ -34,7 +38,7 @@ if __name__ == "__main__":
     #write the split and shuffled lines to new files
     for i, data in enumerate(split_data):
         shuffled_lines1, shuffled_lines2 = zip(*data)
-        with open(args.output_paths[i], 'w', encoding='utf-8') as out1:
+        with gzip.open(args.output_paths[i], 'wb') as out1:
             out1.writelines(shuffled_lines1)
-        with open(args.output_paths[i + len(args.proportions)], 'w', encoding='utf-8') as out2:
+        with gzip.open(args.output_paths[i + len(args.proportions)], 'wb') as out2:
             out2.writelines(shuffled_lines2)

@@ -6,9 +6,11 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 import json
 from transformers import BertModel, BertTokenizer
+import gzip
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s')
+                    
 
 SOS_token = "<SOS>"
 EOS_token = "<EOS>"
@@ -121,7 +123,7 @@ def write_out_embeddings(model, tokenizer, src_sentences, tgt_sentences, output_
     sentence_pairs = list(zip(src_sentences, tgt_sentences))
     batches = get_batches(sentence_pairs, batch_size)
     
-    with open(output_path, "w") as output:
+    with gzip.open(output_path, "wt") as output:
         print(f"Num batches: {len(batches)}")
         for i, batch in enumerate(batches):
             (src_batch, tgt_batch) = zip(*batch)
@@ -134,10 +136,10 @@ def write_out_embeddings(model, tokenizer, src_sentences, tgt_sentences, output_
             
             # Grab CLS token as sent representation
             bert_hidden_states = bert_output["hidden_states"]
-            cls_token_batch = bert_hidden_states[-1][:,0,:]
+            final_layer_token_batch = bert_hidden_states[-1]
             
             # Split batch into list of source sentence embeddings
-            s_embeddings = torch.split(cls_token_batch, split_size_or_sections=1, dim=0) # list of [1, hidden_size] == [1, 768] for each sequence
+            s_embeddings = torch.split(final_layer_token_batch, split_size_or_sections=1, dim=0) # list of [1, seq_len, hidden_size] == [1, seq_len, 768] for each sequence
             assert len(tgt_batch) == len(s_embeddings)
             
             # Build out data to be format: src_embedding, tgt_ids
@@ -146,6 +148,8 @@ def write_out_embeddings(model, tokenizer, src_sentences, tgt_sentences, output_
                 output.write(json.dumps((embedding.tolist(), tgt_sent)) + "\n")
             
             print(f"Done with batch {i}")
+            break
+        output.flush()
 
 ######################################################################
 def id_list_from_sentence(vocab, sentence):
@@ -170,7 +174,8 @@ if __name__ == "__main__":
     parser.add_argument("--src_bitext", help="source bitext should have one sentence per line")
     parser.add_argument("--tgt_bitext", help="tgt bitext should have one sentence per line, same length as src_bitext")
     parser.add_argument("--max_samples", type = int, help="Maximum number of datapoints")
-    parser.add_argument("--vcbs", help="Source and target vocab json output file")
+    parser.add_argument("--src_vcb", help="Source vocab json output file")
+    parser.add_argument("--tgt_vcb", help="target vocab json output file")
     parser.add_argument("--parallel_output", help="src sentence ||| tgt sentence")
     parser.add_argument("--emb_output",help='output file for test translations')
     parser.add_argument("--batch_size", type = int, help='output file for test translations')
@@ -192,25 +197,25 @@ if __name__ == "__main__":
     src_lines = src_lines[:args.max_samples]
     tgt_lines = tgt_lines[:args.max_samples]
 
-    vcbs = {"src": src_vocab.to_dict(), "tgt": tgt_vocab.to_dict()}
-    with open(args.vcbs, "w", encoding=args.encoding) as vocab_file:
-        json.dump(vcbs, vocab_file)
+    with open(args.src_vcb, "w", encoding=args.encoding) as src_vcb_file, open(args.tgt_vcb, "w", encoding=args.encoding) as tgt_vcb_file:
+        json.dump(src_vocab.to_dict(), src_vcb_file)
+        json.dump(tgt_vocab.to_dict(), tgt_vcb_file)
 
-    with open(args.parallel_output, "w", encoding=args.encoding) as parallel_file:
+    with gzip.open(args.parallel_output, "wt", encoding=args.encoding) as parallel_file:
         for (src_line, tgt_line) in zip(src_lines, tgt_lines):
             parallel_file.write(json.dumps((src_line, tgt_line)) + "\n")
 
-    tgt_id_lists = []
-    for tgt_line in tgt_lines:
-        tgt_id_lists.append(id_list_from_sentence(tgt_vocab, tgt_line))
+    # tgt_id_lists = []
+    # for tgt_line in tgt_lines:
+    #     tgt_id_lists.append(id_list_from_sentence(tgt_vocab, tgt_line))
     
-    assert len(src_lines) == len(tgt_lines)
-    assert len(src_lines) == len(tgt_id_lists)
+    # assert len(src_lines) == len(tgt_lines)
+    # assert len(src_lines) == len(tgt_id_lists)
 
-    model = BertModel.from_pretrained("bert-base-uncased")
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    # model = BertModel.from_pretrained("bert-base-uncased")
+    # tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-    write_out_embeddings(model, tokenizer, src_lines, tgt_id_lists, args.emb_output, args.batch_size, device)
+    # write_out_embeddings(model, tokenizer, src_lines, tgt_id_lists, args.emb_output, args.batch_size, device)
 
 
     

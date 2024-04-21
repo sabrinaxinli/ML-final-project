@@ -13,6 +13,9 @@ import logging
 import random
 import time
 from build_data import Vocab
+import nltk
+from nltk.translate.bleu_score import sentence_bleu
+import gzip
 
 SOS_token = "<SOS>"
 EOS_token = "<EOS>"
@@ -32,17 +35,14 @@ class LSTMDecoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
     
     # we only have inputs because we are implementing teacher-forcing
-    def forward(self, labels, embeddings, use_teacher_forcing=False, max_length=50, device="cpu"): # assume inputs is batch of sequences (batch_size, sequence_len, 1)
+    def forward(self, embeddings, labels, use_teacher_forcing=False, max_length=50, device="cpu"): # assume inputs is batch of sequences (batch_size, sequence_len, 1)
         pred_outputs = []
         logit_outputs = []
+
         # Initialization
-        print(f"label shape: {labels.shape}")
         h_n, c_n = self.get_initial_state(embeddings, device = device) # get encoder end state
         batch_size = labels.size(0)
         curr_input = self.embedding(torch.full((batch_size, 1), SOS_index, device=device)) # (1, hidden_size)
-
-        print(f"Input shape: {labels.shape}")
-        print(f"curr_input shape: {labels[:, 0].shape}")
 
         for t in range(max_length):
             output, (h_n, c_n) = self.lstm(curr_input, (h_n, c_n)) # expects input: (N, L, H_in)
@@ -58,11 +58,6 @@ class LSTMDecoder(nn.Module):
 
         batched_outputs = torch.stack(pred_outputs, dim = 1) # stack on dim = 1, to restore seq_len -> [batch_size, seq_len = 1, num_classes]
         batched_logits = torch.stack(logit_outputs, dim = 1)
-        print(f"batched logits shape HERE : {batched_logits.shape}")
-
-        # batched_output_probs = torch.nn.functional.log_softmax(batched_logits, dim = 2)
-        # print(f"batched_output_probs shape: {batched_output_probs.shape}") # get to [batch_size, num_classes]
-        # return batched_outputs, batched_output_probs
         return batched_outputs, batched_logits
 
     def get_initial_state(self, embeddings, device):
@@ -70,19 +65,93 @@ class LSTMDecoder(nn.Module):
         h_0 = embeddings.unsqueeze(0) # (1, N, Hidden)
         c_0 = torch.zeros_like(h_0, device = device)
         return (h_0, c_0)
+    
+class AttentionLSTMDecoder(nn.Module):
+    def __init__(self, embed_dim, hidden_size, vocab_size, dropout=0.1):
+        super().__init__()
+
+        # pretrained embedding size is the same as embed_size (note: different from above!)
+        self.embed_dim = embed_dim
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(vocab_size, embed_dim)
+
+        contextualized_input_size = embed_dim * 2
+        self.lstm = nn.LSTM(input_size = contextualized_input_size, hidden_size = hidden_size, batch_first = True)
+        self.output = nn.Linear(in_features = hidden_size, out_features = vocab_size)
+        self.dropout = nn.Dropout(dropout)
+
+        self.encoder_attention = nn.Linear(in_features = embed_dim, out_features = hidden_size)
+        self.decoder_attention = nn.Linear(in_features = hidden_size, out_features = hidden_size)
+        self.v = nn.Parameter(torch.rand(hidden_size))
+    
+    # we only have inputs because we are implementing teacher-forcing
+    def forward(self, embeddings, labels, use_teacher_forcing=False, max_length=50, device="cpu"): # assume inputs is batch of sequences (batch_size, sequence_len, 1)
+        pred_outputs = []
+        logit_outputs = []
+        batch_size = embeddings.size(0) # get first dim as batch_size
+
+        # Initialization
+        h_n, c_n = self.get_initial_state(batch_size, device = device) # init
+        curr_input = self.embedding(torch.full((batch_size, 1), SOS_index, device=device)) # (batch_size, embed_dim)
+
+        for t in range(max_length):
+            # Calculate attention and create attention-based input
+            attention_scores = self.calculate_attention_scores(embeddings, h_n) # [batch_size, seq_len]
+            attention_weights = self.softmax(attention_scores, dim = 1).unsqueeze(dim = 2) # [batch_size, seq_len, 1]
+            context_vector = torch.sum(attention_weights * embeddings, dim = 1) # weighted embeds -> [batch_size, embed_dim]
+            contextualized_input = torch.cat((context_vector, curr_input), dim = 1)
+
+            # Pass through lstm
+            output, (h_n, c_n) = self.lstm(contextualized_input, (h_n, c_n)) # expects input: (N, L, H_in)
+            logits = self.output(output).squeeze(dim = 1) # convert to [batch_size, num_classes]
+            pred = logits.argmax(dim = -1) # argmax across final output dim
+            logit_outputs.append(logits)
+            pred_outputs.append(pred)
+            if (pred == EOS_index).all():
+                break
+
+            # Feed output back through embedding
+            curr_input = labels[:, t] if use_teacher_forcing else pred
+            curr_input = self.embedding(curr_input).view(batch_size, 1, -1) # [batch_size, seq_len = 1, embed_dim]
+
+        batched_outputs = torch.stack(pred_outputs, dim = 1) # stack on dim = 1, to restore seq_len -> [batch_size, seq_len = 1, num_classes]
+        batched_logits = torch.stack(logit_outputs, dim = 1)
+        return batched_outputs, batched_logits
+    
+    def calculate_attention_scores(self, encoder_embeddings, decoder_hidden):
+        # Input sizes:
+            # encoder_embeddings: [batch_size,  seq_len]
+            # decoder_hidden: [batch_size, decoder_dim]
+        # Output size:
+            # scores: [batch_size, seq_len, hidden_size]
+        enc_proj = self.encoder_attention(encoder_embeddings) # [batch_size, seq_len, hidden_size]
+        dec_proj = self.decoder_attention(decoder_hidden) # [batch_size, hidden_size]
+
+        dec_proj = dec_proj.unsqueeze(dim = 1).expand_as(enc_proj) # expand to [batch_size, seq_len, hidden_size]
+
+        tanh_result = torch.tanh(enc_proj + dec_proj)
+        pre_scores = self.v * tanh_result
+        scores = torch.sum(pre_scores, dim = 2)
+        return scores
+    
+    def get_initial_state(self, batch_size, device):
+        h_0 = torch.zeros((1, batch_size, self.hidden_size), device = device)
+        c_0 = torch.zeros((1, batch_size, self.hidden_size), device = device)
+        return (h_0, c_0)
 
 # First item in pair is embedding, second is tgt_sent
 def get_pairs(datafile):
     data = []
-    with open(datafile, "r", encoding="utf-8") as file:
+    with gzip.open(datafile, "r", encoding="utf-8") as file:
         for line in file:
             data.append(json.loads(line))
     return data
 
 def zero_out_post_eos(probs, outputs):
     mask = (outputs == EOS_index).cumsum(dim = 1) <= 1 # [batch_size, seq_len]
+    seq_lengths = mask.sum(dim = 1)
     mask = mask.unsqueeze(dim = 2) # [batch_size, seq_len, 1]
-    return probs * mask.float()
+    return probs * mask.float(), seq_lengths
 
 def pad_sequence_tensor_to_max(sequences, max_length, pad_value = 0):
     current_length = sequences.size(1)
@@ -95,29 +164,110 @@ def pad_sequence_list_to_max(sequences, max_length, pad_value = 0):
     padded_tensor = torch.stack(padded_sequences, dim = 0) # restore batch_size
     return padded_tensor
 
+def ids_to_sentence(output, vocab):
+    if type(output) != list:
+        output = output.tolist()
+    return [vocab.index2word[str(idx)] for idx in output if idx not in (0, 1)]
+
+def check_for_nans(tensor, name="Tensor"):
+    if torch.isnan(tensor).any():
+        print(f"NaN detected in {name}")
 
 # Parameters: input_batch -> Lst[tensors], target_batch -> tensor
 def train(model, optimizer, loss_fn, input_batch, target_batch, max_length, device = "cpu"):
     
+    # Setup
     model.train()
     model.to(device)
+    optimizer.zero_grad()
+   
+    # Pad target batch for teacher-forcing
+    padded_target_batch = pad_sequence_list_to_max(target_batch, max_length = max_length, pad_value = SOS_index).to(device)
 
-    target_batch = target_batch.to(device)
+    # Forward pass
+    batched_outputs, batched_output_logits = model(embeddings = input_batch, labels = padded_target_batch, use_teacher_forcing = True, device = device)
 
-    batched_outputs, batched_output_probs = model(labels = target_batch, embeddings = input_batch, device = device)
-    cleaned_probs = zero_out_post_eos(batched_output_probs, batched_outputs)
-    if cleaned_probs.size(1) < max_length:
-        cleaned_probs = pad_sequence_tensor_to_max(cleaned_probs, max_length, pad_value = SOS_index)
+    # Clean and pad output to max_length
+    masked_logits, seq_lengths = zero_out_post_eos(batched_output_logits, batched_outputs)
+    padded_logits = pad_sequence_tensor_to_max(masked_logits, max_length, SOS_index)
 
+    # Calculate max length out of model generation and target labels
+    max_target_size = max(t.size(0) for t in target_batch)
+    max_output_size = seq_lengths.max().item()
+    max_seq_len = max(max_target_size , max_output_size)
+
+    # Print lengths of prediction and output
+    print(f"Max target size {max_target_size}")
+    print(f"Max_output_size {max_output_size}")
+    print(f"Max seq len: {max_seq_len}")
+
+    # Truncate to this max length
+    target_label = padded_target_batch[:, :max_seq_len]
+    output_logits = padded_logits[:, :max_seq_len, :]
+
+    # Get loss
     total_loss = 0
-    for t in range(max_length):
-        total_loss += loss_fn(cleaned_probs[:, t, :], target_batch[:, t])
+    for t in range(max_seq_len):
+        loss = loss_fn(output_logits[:, t, :], target_label[:, t])
+        total_loss += loss
+
     total_loss.backward()
+
+    # clip_value = 1.0
+    # torch.nn.utils.clip_grad_norm_(model.parameters(), clip_value)
+
     optimizer.step()
 
+    print(f"TRAIN LOSS {total_loss.item()}")
     return total_loss.item()
 
+def evaluate(model, loss_fn, input_batch, target_batch, tgt_vocab, max_length, device = "cpu"):
+    # Setup
+    model.eval()
+    model.to(device)
+   
+    # Pad target batch 
+    padded_target_batch = pad_sequence_list_to_max(target_batch, max_length = max_length, pad_value = SOS_index).to(device)
 
+    # Forward pass - teacher forcing False because eval
+    batched_outputs, batched_output_logits = model(embeddings = input_batch, labels = padded_target_batch, use_teacher_forcing = False, device = device)
+
+    # Clean and pad output to max_length
+    masked_logits, seq_lengths = zero_out_post_eos(batched_output_logits, batched_outputs)
+    padded_logits = pad_sequence_tensor_to_max(masked_logits, max_length, SOS_index)
+
+    # Calculate max length out of model generation and target labels
+    max_target_size = max(t.size(0) for t in target_batch)
+    max_output_size = seq_lengths.max().item()
+    max_seq_len = max(max_target_size , max_output_size)
+
+    # Print lengths of prediction and output
+    print(f"Max target size {max_target_size}")
+    print(f"Max_output_size {max_output_size}")
+    print(f"Max seq len: {max_seq_len}")
+
+    # Truncate to this max length
+    target_label = padded_target_batch[:, :max_seq_len]
+    output_logits = padded_logits[:, :max_seq_len, :]
+
+    # Get loss
+    total_loss = 0
+    for t in range(max_seq_len):
+        loss = loss_fn(output_logits[:, t, :], target_label[:, t])
+        total_loss += loss
+
+    # Get actual predictions and actual label tokens
+    preds = torch.argmax(output_logits, dim = 2).tolist()
+    pred_sentences = [ids_to_sentence(pred, tgt_vocab) for pred in preds]
+    target_sentences = [ids_to_sentence(target, tgt_vocab) for target in target_batch]
+
+    # Calculate bleu scores across sentences
+    scores = [sentence_bleu(target_sent, pred_sent) for (target_sent, pred_sent) in zip(target_sentences, pred_sentences)]
+
+    # Return avg bleu score and dev loss
+    return sum(scores) / len(scores), total_loss.item()
+    
+    
 # logging.info(f"Batched outputs shape: {batched_output_probs.shape}")
     # logging.info(f"Batched output probs shape: {batched_output_probs.shape}")
     # print(f"Target batch shape: {target_batch.shape}")
@@ -128,12 +278,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--hidden_size', default=768, type=int, help = "hidden size of encoder/decoder, also word vector size")
     parser.add_argument('--n_iters', default=1000, type=int, help = "total number of batches to train on")
-    parser.add_argument('--vcbs', help = "vocabulary json")
+    parser.add_argument('--tgt_vcb', help = "target vocabulary json")
     parser.add_argument('--print_every', default=10, type=int, help = "print loss info every this many training examples")
     parser.add_argument('--checkpoint_every', default=10, type=int, help = "write out checkpoint every this many batches")
     parser.add_argument('--batch_size', default=16, type=int, help = "batch_size")
     parser.add_argument('--initial_lr', default=0.001, type=float, help = "initial learning rate")
-    parser.add_argument("--max_length", default = 50, nargs="?", help = "max number of tokens in generation")
+    parser.add_argument("--max_length", default = 60, nargs="?", help = "max number of tokens in generation")
     parser.add_argument('--train_file', default = "train_file", help = "train data file")
     parser.add_argument('--dev_file', default = "dev_file", help= "dev data file")
     parser.add_argument('--silver_file', default = "silver_file", help= "silver data file")
@@ -151,29 +301,36 @@ if __name__ == "__main__":
 
     print(f"Device: {device}")
     iter_num = 0
+    train_losses = []
+    dev_losses = []
+    bleu_scores = []
     
     train_pairs = get_pairs(args.train_file)
     dev_pairs = get_pairs(args.dev_file)
-    silver_pairs = get_pairs(args.silver_file)
-    test_pairs = get_pairs(args.test_file)
+    # silver_pairs = get_pairs(args.silver_file)
+    # test_pairs = get_pairs(args.test_file)
 
     if args.load_checkpoint:
         state = torch.load(args.load_checkpoint)
         iter_num = state["iter_num"]
-        src_vocab = state["src_vocab"]
+        print(f"Starting training at iter: {iter_num}")
         tgt_vocab = state["tgt_vocab"]
+        train_losses = state["train_losses"]
+        dev_losses = state["dev_losses"]
+        bleu_scores = state["bleu_scores"]
         
     else:
         iter_num = 0
-        with open(args.vcbs, "r") as vocab_files:
-            vcbs = json.load(vocab_files)
-        src_vocab, tgt_vocab = Vocab(vocab_dict = vcbs["src"]), Vocab(vocab_dict = vcbs["tgt"])
+        with open(args.tgt_vcb, "r") as vocab_file:
+           vcb = json.load(vocab_file)
+        tgt_vocab = Vocab(vocab_dict = vcb)
     
+    # print(tgt_vocab.index2word)
 
     model = LSTMDecoder(embed_dim = 768, hidden_size=768, vocab_size=tgt_vocab.n_words).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.initial_lr)
     # loss_fn = nn.NLLLoss(reduction="none")
-    loss_fn = nn.CrossEntropyLoss(ignore_index = SOS_index)
+    loss_fn = nn.CrossEntropyLoss()# ignore_index = SOS_index)
 
     if args.load_checkpoint:
         model.load_state_dict(state["model_state"])
@@ -181,6 +338,7 @@ if __name__ == "__main__":
 
     start = time.time()
     print_loss_total = 0
+
     while iter_num < args.n_iters:
         iter_num += 1
         input_batch = []
@@ -197,22 +355,27 @@ if __name__ == "__main__":
             
         # No need to pad input_batch because these are fixed-length embeds
         # Pad target sentences to max_length
-        padded_target_batch = pad_sequence_list_to_max(target_batch, max_length = args.max_length, pad_value = SOS_index)
-        loss = train(model, optimizer, loss_fn, input_batch, padded_target_batch, max_length = args.max_length, device = device)
-        
-        print_loss_total += loss
+        train_loss = train(model, optimizer, loss_fn, input_batch, target_batch, max_length = args.max_length, device = device)
+        train_losses.append(train_loss)
+        print_loss_total += train_loss
         if iter_num % args.checkpoint_every == 0:
+            avg_bleu, dev_loss = evaluate(model, loss_fn, input_batch, target_batch, tgt_vocab, args.max_length, device = device)
+            dev_losses.append(dev_loss)
+            bleu_scores.append(avg_bleu)
             state = {"iter_num": iter_num,
                 "model_state": model.state_dict(),
                 "opt_state": optimizer.state_dict(),
-                "src_vocab": src_vocab,
                 "tgt_vocab": tgt_vocab,
+                "train_losses" : train_losses,
+                "dev_losses" : dev_losses,
+                "bleu_scores" : bleu_scores,
                 }
             filename = f'state_{iter_num:010d}.pt'
             torch.save(state, filename)
             logging.debug('wrote checkpoint to %s', filename)
-
+        
         if iter_num % args.print_every == 0:
             print_loss_avg = print_loss_total / args.print_every
             print_loss_total = 0
             logging.info(f"time since start:{time.time() - start} (iter:{iter_num} iter/n_iters:{iter_num / args.n_iters * 100}) loss_avg({print_loss_avg:.4f})")
+            logging.info(f"Most recent bleu score: {bleu_scores[-1] if len(bleu_scores) > 1 else 'NA'}")
