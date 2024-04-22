@@ -77,7 +77,7 @@ class AttentionLSTMDecoder(nn.Module):
 
         contextualized_input_size = embed_dim * 2
         self.lstm = nn.LSTM(input_size = contextualized_input_size, hidden_size = hidden_size, batch_first = True)
-        self.output = nn.Linear(in_features = hidden_size, out_features = vocab_size)
+        self.output = nn.Linear(in_features = embed_dim * 3, out_features = vocab_size)
         self.dropout = nn.Dropout(dropout)
 
         self.encoder_attention = nn.Linear(in_features = embed_dim, out_features = hidden_size)
@@ -88,22 +88,29 @@ class AttentionLSTMDecoder(nn.Module):
     def forward(self, embeddings, labels, use_teacher_forcing=False, max_length=50, device="cpu"): # assume inputs is batch of sequences (batch_size, sequence_len, 1)
         pred_outputs = []
         logit_outputs = []
-        batch_size = embeddings.size(0) # get first dim as batch_size
+        batch_size = len(embeddings) # get first dim as batch_size
 
         # Initialization
         h_n, c_n = self.get_initial_state(batch_size, device = device) # init
-        curr_input = self.embedding(torch.full((batch_size, 1), SOS_index, device=device)) # (batch_size, embed_dim)
+        curr_input = self.dropout(self.embedding(torch.full((batch_size, 1), SOS_index, device=device))) # [batch_size, 1, embed_dim]
 
         for t in range(max_length):
             # Calculate attention and create attention-based input
-            attention_scores = self.calculate_attention_scores(embeddings, h_n) # [batch_size, seq_len]
-            attention_weights = self.softmax(attention_scores, dim = 1).unsqueeze(dim = 2) # [batch_size, seq_len, 1]
-            context_vector = torch.sum(attention_weights * embeddings, dim = 1) # weighted embeds -> [batch_size, embed_dim]
-            contextualized_input = torch.cat((context_vector, curr_input), dim = 1)
+            encoder_embeddings_tensor, attention_scores = self.calculate_attention_scores(embeddings, h_n, device) # [batch_size, seq_len]
+            attention_weights = F.softmax(attention_scores, dim = 1).unsqueeze(dim = 2) # [batch_size, seq_len, 1]
+            context_vector = torch.sum(attention_weights * encoder_embeddings_tensor, dim = 1).unsqueeze(dim = 1) # weighted embeds -> [batch_size, 1, embed_dim]
+            # print(f"Context vector shape: {context_vector.shape}")
+            # print(f"Curr input shape: {curr_input.shape}")
+            weighted_embeddings_and_input = torch.cat((context_vector, curr_input), dim = 2)
 
             # Pass through lstm
-            output, (h_n, c_n) = self.lstm(contextualized_input, (h_n, c_n)) # expects input: (N, L, H_in)
-            logits = self.output(output).squeeze(dim = 1) # convert to [batch_size, num_classes]
+            lstm_output, (h_n, c_n) = self.lstm(weighted_embeddings_and_input, (h_n, c_n)) # expects input: (N, L=1, H_in), output: [N, L=1, hidden_size]
+
+            # Combine lstm_output with input embedding and weighted encoder embeddings before feeding through output
+            # print(f"lstm_output : {lstm_output.shape}")
+            # print(f"weighted_embeddings_and_input: {weighted_embeddings_and_input.shape}")
+            output_vector = torch.cat((lstm_output, weighted_embeddings_and_input), dim = 2)
+            logits = self.output(output_vector).squeeze(dim = 1) # convert to [batch_size, num_classes]
             pred = logits.argmax(dim = -1) # argmax across final output dim
             logit_outputs.append(logits)
             pred_outputs.append(pred)
@@ -118,21 +125,24 @@ class AttentionLSTMDecoder(nn.Module):
         batched_logits = torch.stack(logit_outputs, dim = 1)
         return batched_outputs, batched_logits
     
-    def calculate_attention_scores(self, encoder_embeddings, decoder_hidden):
+    def calculate_attention_scores(self, encoder_embeddings, decoder_hidden, device = "cpu"):
         # Input sizes:
-            # encoder_embeddings: [batch_size,  seq_len]
+            # encoder_embeddings: List: List: embeddings
             # decoder_hidden: [batch_size, decoder_dim]
         # Output size:
             # scores: [batch_size, seq_len, hidden_size]
-        enc_proj = self.encoder_attention(encoder_embeddings) # [batch_size, seq_len, hidden_size]
-        dec_proj = self.decoder_attention(decoder_hidden) # [batch_size, hidden_size]
+        max_seq_len = max([seq.size(0) for seq in encoder_embeddings])
+        encoder_embeddings_tensor, mask = pad_sequence_with_mask(encoder_embeddings, max_seq_len, device) # [batch_size, padded_seq_len, embed_size]
+        enc_proj = self.encoder_attention(encoder_embeddings_tensor) # [batch_size, padded_seq_len, hidden_size]
+        dec_proj = self.decoder_attention(decoder_hidden).squeeze(dim = 0) # [batch_size, hidden_size]
 
         dec_proj = dec_proj.unsqueeze(dim = 1).expand_as(enc_proj) # expand to [batch_size, seq_len, hidden_size]
 
         tanh_result = torch.tanh(enc_proj + dec_proj)
         pre_scores = self.v * tanh_result
         scores = torch.sum(pre_scores, dim = 2)
-        return scores
+        scores.masked_fill_(~mask, float("-inf"))
+        return encoder_embeddings_tensor, scores
     
     def get_initial_state(self, batch_size, device):
         h_0 = torch.zeros((1, batch_size, self.hidden_size), device = device)
@@ -140,11 +150,17 @@ class AttentionLSTMDecoder(nn.Module):
         return (h_0, c_0)
 
 # First item in pair is embedding, second is tgt_sent
-def get_pairs(datafile):
+def get_pairs(datafile, max_size = 100000):
     data = []
-    with gzip.open(datafile, "r", encoding="utf-8") as file:
+    with gzip.open(datafile, "r") as file:
+        i = 0
         for line in file:
-            data.append(json.loads(line))
+            if i < max_size:
+                data.append(json.loads(line))
+            else:
+                break
+            print(f"Datapoint: {i}")
+            i += 1
     return data
 
 def zero_out_post_eos(probs, outputs):
@@ -164,6 +180,29 @@ def pad_sequence_list_to_max(sequences, max_length, pad_value = 0):
     padded_tensor = torch.stack(padded_sequences, dim = 0) # restore batch_size
     return padded_tensor
 
+def pad_sequence_with_mask(sequences, max_length, device = "cpu"):
+    # Sequences is a list of tensors [seq_len, 768]
+    padded_sequences = []
+    masks = []
+    for seq in sequences:
+        pad_length = max_length - len(seq)
+        pad_tensor = torch.zeros(pad_length, seq.size(1), device = device)
+        
+        # Concat along seq_len dim
+        padded_seq = torch.cat([seq, pad_tensor], dim=0)
+        padded_sequences.append(padded_seq)
+        
+        # Create mask (1 for real data, 0 for padding)
+        mask = torch.cat([torch.ones(len(seq), dtype=torch.bool, device = device), torch.zeros(pad_length, dtype=torch.bool, device = device)])
+        masks.append(mask)
+
+    # Stack all sequences and masks
+    padded_sequences = torch.stack(padded_sequences).to(device)
+    masks = torch.stack(masks).to(device)
+
+    return padded_sequences, masks
+
+
 def ids_to_sentence(output, vocab):
     if type(output) != list:
         output = output.tolist()
@@ -180,7 +219,7 @@ def train(model, optimizer, loss_fn, input_batch, target_batch, max_length, devi
     model.train()
     model.to(device)
     optimizer.zero_grad()
-   
+
     # Pad target batch for teacher-forcing
     padded_target_batch = pad_sequence_list_to_max(target_batch, max_length = max_length, pad_value = SOS_index).to(device)
 
@@ -305,8 +344,8 @@ if __name__ == "__main__":
     dev_losses = []
     bleu_scores = []
     
-    train_pairs = get_pairs(args.train_file)
-    dev_pairs = get_pairs(args.dev_file)
+    train_pairs = get_pairs(args.train_file, max_size=10000)
+    dev_pairs = get_pairs(args.dev_file, max_size = 100000)
     # silver_pairs = get_pairs(args.silver_file)
     # test_pairs = get_pairs(args.test_file)
 
@@ -327,10 +366,9 @@ if __name__ == "__main__":
     
     # print(tgt_vocab.index2word)
 
-    model = LSTMDecoder(embed_dim = 768, hidden_size=768, vocab_size=tgt_vocab.n_words).to(device)
+    model = AttentionLSTMDecoder(embed_dim = 768, hidden_size=768, vocab_size=tgt_vocab.n_words).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.initial_lr)
-    # loss_fn = nn.NLLLoss(reduction="none")
-    loss_fn = nn.CrossEntropyLoss()# ignore_index = SOS_index)
+    loss_fn = nn.CrossEntropyLoss()
 
     if args.load_checkpoint:
         model.load_state_dict(state["model_state"])
@@ -345,7 +383,7 @@ if __name__ == "__main__":
         target_batch = []
         for i in range(args.batch_size):
             training_pair = random.choice(train_pairs)
-            input_tensor = torch.tensor(training_pair[0], dtype = torch.float).squeeze(dim = 0).to(device) # needs to be of shape [seq_len]
+            input_tensor = torch.tensor(training_pair[0], dtype = torch.float).squeeze(dim = 0).to(device) # needs to be of shape [seq_len, embed_size]
             target_tensor = torch.tensor(training_pair[1], dtype = torch.long).to(device)
             if target_tensor.size(0) > args.max_length:
                 print("Truncated")

@@ -4,3 +4,4 @@ jsonlines
 torch
 torchvision
 torchaudio
+nltk

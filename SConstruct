@@ -25,9 +25,10 @@ vars = Variables("custom.py")
 vars.AddVariables(
     ("TGT_VCB", "", "./work/de_saved.vcb"),
     ("EMB_FILE", "", "./work/eng-de-embedded_saved.jsonlines.gz"),
-    ("PARALLEL", "", "./work/eng-de-parallel.jsonlines.gzip"),
+    ("PARALLEL", "", "./work/eng-de-parallel_saved.jsonlines.gz"),
     ("PROPORTIONS", "", [0.6, 0.2, 0.1, 0.1]), # train, val, silver, test
-    ("DATA_SPLITS", "", []),
+    ("DATA_SPLITS", "", ["./work/train/en-de-parallel-train_saved.jsonlines", "./work/dev/en-de-parallel-dev_saved.jsonlines", "./work/silver/en-de-parallel-silver_saved.jsonlines", "./work/test/en-de-parallel-test_saved.jsonlines",
+                         "./work/train/en-de-embedded-train_saved.jsonlines", "./work/dev/en-de-embedded-dev_saved.jsonlines", "./work/silver/en-de-embedded-silver_saved.jsonlines", "./work/test/en-de-embedded-test_saved.jsonlines"]),
     ("USE_GRID", "", ""),
     ("MODEL_PATH", "", ""),
 )
@@ -86,20 +87,20 @@ else:
                                 )
 
 # If no trained model path, train a model
-# if env.get("MODEL_PATH", None):
-#     model = env["MODEL_PATH"]
-# else:
-#     training_splits = env["DATA_SPLITS"] if env.get("DATA_SPLITS", None) else [split_outputs[4:]]
-#     result = env.TrainModel(source = training_splits,
-#                             target = ["./work/result/results.txt"],
-#                             HIDDEN_SIZE = 768,
-#                             N_ITERS = 1000,
-#                             VCBS = tgt_vocab,
-#                             PRINT_EVERY = 5,
-#                             CHK_EVERY = 250,
-#                             BATCH_SIZE = 16,
-#                             INIT_LR = 0.001,
-#                             LOAD_CHK = "")
+if env.get("MODEL_PATH", None):
+    model = env["MODEL_PATH"]
+else:
+    training_splits = env["DATA_SPLITS"] if env.get("DATA_SPLITS", None) else split_outputs
+    result = env.TrainModel(source = training_splits[4:],
+                            target = ["./work/result/results.txt"],
+                            HIDDEN_SIZE = 768,
+                            N_ITERS = 1000,
+                            VCBS = tgt_vocab,
+                            PRINT_EVERY = 50,
+                            CHK_EVERY = 250,
+                            BATCH_SIZE = 16,
+                            INIT_LR = 0.001,
+                            LOAD_CHK = "")
 
    #  ["./work/train/en-de-parallel-train.jsonlines", "./work/train/en-de-embedded-train.jsonlines",
    #  "./work/dev/en-de-parallel-train.jsonlines", "./work/dev/en-de-embedded-train.jsonlines",
