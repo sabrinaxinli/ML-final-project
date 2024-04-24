@@ -77,6 +77,11 @@ class AttentionLSTMDecoder(nn.Module):
 
         contextualized_input_size = embed_dim * 2
         self.lstm = nn.LSTM(input_size = contextualized_input_size, hidden_size = hidden_size, batch_first = True)
+        for name, param in self.lstm.named_parameters():
+            if 'weight_hh' in name:
+                nn.init.orthogonal_(param.data)
+            elif 'weight_ih' in name:
+                nn.init.xavier_uniform_(param.data)
         self.output = nn.Linear(in_features = embed_dim * 3, out_features = vocab_size)
         self.dropout = nn.Dropout(dropout)
 
@@ -114,8 +119,8 @@ class AttentionLSTMDecoder(nn.Module):
             pred = logits.argmax(dim = -1) # argmax across final output dim
             logit_outputs.append(logits)
             pred_outputs.append(pred)
-            if (pred == EOS_index).all():
-                break
+            # if (pred == EOS_index).all():
+            #     break
 
             # Feed output back through embedding
             curr_input = labels[:, t] if use_teacher_forcing else pred
@@ -144,10 +149,16 @@ class AttentionLSTMDecoder(nn.Module):
         scores.masked_fill_(~mask, float("-inf"))
         return encoder_embeddings_tensor, scores
     
+    # def get_initial_state(self, batch_size, device):
+    #     h_0 = torch.zeros((1, batch_size, self.hidden_size), device = device)
+    #     c_0 = torch.zeros((1, batch_size, self.hidden_size), device = device)
+    #     return (h_0, c_0)
+    
     def get_initial_state(self, batch_size, device):
-        h_0 = torch.zeros((1, batch_size, self.hidden_size), device = device)
-        c_0 = torch.zeros((1, batch_size, self.hidden_size), device = device)
+        h_0 = torch.nn.init.orthogonal_(torch.empty(1, batch_size, self.hidden_size, device=device))
+        c_0 = torch.nn.init.orthogonal_(torch.empty(1, batch_size, self.hidden_size, device=device))
         return (h_0, c_0)
+
 
 # First item in pair is embedding, second is tgt_sent
 def get_pairs(datafile, max_size = 100000):
@@ -163,20 +174,56 @@ def get_pairs(datafile, max_size = 100000):
             i += 1
     return data
 
-def zero_out_post_eos(probs, outputs):
+def zero_out_post_eos(logits, outputs):
     mask = (outputs == EOS_index).cumsum(dim = 1) <= 1 # [batch_size, seq_len]
     seq_lengths = mask.sum(dim = 1)
     mask = mask.unsqueeze(dim = 2) # [batch_size, seq_len, 1]
-    return probs * mask.float(), seq_lengths
+    return logits * mask.float(), seq_lengths
 
-def pad_sequence_tensor_to_max(sequences, max_length, pad_value = 0):
-    current_length = sequences.size(1)
-    padding_size = max(0, max_length - current_length)
-    padded_sequences = F.pad(sequences, (0, 0, 0, padding_size), "constant", value=pad_value)
-    return padded_sequences
+# def switch_out_post_eos(logits, outputs):
+#     mask = (outputs == EOS_index).cumsum(dim = 1) <= 1 # [batch_size, seq_len]
+#     seq_lengths = mask.sum(dim = 1) # up to and including EOS token
+#     masked_outputs = torch.where(mask, outputs, torch.full_like(outputs, EOS_index)) # [batch_size, seq_len, 1]
+#     masked_logits = torch.where(mask, logits, torch.full_like(logits, float("-inf")))
+#     masked_logits = masked_logits[:, :, EOS_index] = 1
+#     return masked_outputs, seq_lengths
+
+def switch_out_post_eos(logits, outputs):
+    # Create a mask that is True up to and including the first occurrence of the EOS token
+    mask = (outputs == EOS_index).cumsum(dim=1) <= 1
+    seq_lengths = mask.sum(dim=1)
+
+    # Using these instead of inf for more numeric stability
+    large_neg_value = -1e5
+    large_pos_value = 1e5
+
+    print(f"Mask: {mask.shape}")
+    print(f"Seq lengths: {seq_lengths.shape}")
+    print(f"outputs: {outputs.shape}")
+    print(f"logits: {logits.shape}")
+    masked_outputs = torch.where(mask, outputs, torch.full_like(outputs, EOS_index))
+    masked_logits = torch.where(mask.unsqueeze(dim = 2), logits, torch.full_like(logits, large_neg_value))
+
+    # Create mask specifically for the EOS_index where the first mask is false
+    eos_mask = ~mask
+    print(f"EOS mask: {eos_mask.shape}")
+    masked_logits[:, :, EOS_index] = torch.where(eos_mask, torch.full_like(masked_logits[:, :, EOS_index], large_pos_value), masked_logits[:, :, EOS_index])
+
+    return masked_outputs, masked_logits, seq_lengths
+
+# def pad_sequence_tensor_to_max(sequences, max_length, pad_value = EOS_index):
+#     current_length = sequences.size(1)
+#     padding_size = max(0, max_length - current_length)
+#     padded_sequences = F.pad(sequences, (0, 0, 0, padding_size), "constant", value=pad_value)
+#     return padded_sequences
+
+# Pads to  max_length with EOS-index logits
+# def pad_sequence_logits_to_max(sequences, max_length):
+
 
 def pad_sequence_list_to_max(sequences, max_length, pad_value = 0):
     padded_sequences = [F.pad(seq, (0, max(0, max_length - len(seq))), "constant", value=pad_value) for seq in sequences]
+    # print(padded_sequences)
     padded_tensor = torch.stack(padded_sequences, dim = 0) # restore batch_size
     return padded_tensor
 
@@ -202,11 +249,13 @@ def pad_sequence_with_mask(sequences, max_length, device = "cpu"):
 
     return padded_sequences, masks
 
+def length_penalty(generated_length, target_length):
+    return torch.abs(generated_length - target_length).float() / target_length
 
 def ids_to_sentence(output, vocab):
     if type(output) != list:
         output = output.tolist()
-    return [vocab.index2word[str(idx)] for idx in output if idx not in (0, 1)]
+    return [vocab.index2word.get(str(idx), "<unk>") for idx in output if idx not in (0, 1)]
 
 def check_for_nans(tensor, name="Tensor"):
     if torch.isnan(tensor).any():
@@ -221,14 +270,14 @@ def train(model, optimizer, loss_fn, input_batch, target_batch, max_length, devi
     optimizer.zero_grad()
 
     # Pad target batch for teacher-forcing
-    padded_target_batch = pad_sequence_list_to_max(target_batch, max_length = max_length, pad_value = SOS_index).to(device)
+    padded_target_batch = pad_sequence_list_to_max(target_batch, max_length = max_length, pad_value = EOS_index).to(device)
 
     # Forward pass
-    batched_outputs, batched_output_logits = model(embeddings = input_batch, labels = padded_target_batch, use_teacher_forcing = True, device = device)
+    batched_outputs, batched_output_logits = model(embeddings = input_batch, labels = padded_target_batch, use_teacher_forcing = True, max_length = max_length, device = device)
 
     # Clean and pad output to max_length
     masked_logits, seq_lengths = zero_out_post_eos(batched_output_logits, batched_outputs)
-    padded_logits = pad_sequence_tensor_to_max(masked_logits, max_length, SOS_index)
+    # padded_logits = pad_sequence_tensor_to_max(masked_logits, max_length, float("-"))
 
     # Calculate max length out of model generation and target labels
     max_target_size = max(t.size(0) for t in target_batch)
@@ -240,20 +289,28 @@ def train(model, optimizer, loss_fn, input_batch, target_batch, max_length, devi
     print(f"Max_output_size {max_output_size}")
     print(f"Max seq len: {max_seq_len}")
 
-    # Truncate to this max length
+    # Truncate to this max length length between two
     target_label = padded_target_batch[:, :max_seq_len]
-    output_logits = padded_logits[:, :max_seq_len, :]
+    output_logits = masked_logits[:, :max_seq_len, :]
 
     # Get loss
     total_loss = 0
     for t in range(max_seq_len):
         loss = loss_fn(output_logits[:, t, :], target_label[:, t])
+        check_for_nans(loss)
         total_loss += loss
+
+    for i in range(len(target_batch)):
+        generated_length = seq_lengths[i]
+        target_length = target_batch[i].size(0)
+        total_loss += length_penalty(generated_length, target_length) * 0.01
+
+    total_loss /= len(target_batch)
 
     total_loss.backward()
 
-    # clip_value = 1.0
-    # torch.nn.utils.clip_grad_norm_(model.parameters(), clip_value)
+    clip_value = 1.0
+    torch.nn.utils.clip_grad_norm_(model.parameters(), clip_value)
 
     optimizer.step()
 
@@ -269,11 +326,11 @@ def evaluate(model, loss_fn, input_batch, target_batch, tgt_vocab, max_length, d
     padded_target_batch = pad_sequence_list_to_max(target_batch, max_length = max_length, pad_value = SOS_index).to(device)
 
     # Forward pass - teacher forcing False because eval
-    batched_outputs, batched_output_logits = model(embeddings = input_batch, labels = padded_target_batch, use_teacher_forcing = False, device = device)
+    batched_outputs, batched_output_logits = model(embeddings = input_batch, labels = padded_target_batch, use_teacher_forcing = False, max_length = max_length, device = device)
 
     # Clean and pad output to max_length
     masked_logits, seq_lengths = zero_out_post_eos(batched_output_logits, batched_outputs)
-    padded_logits = pad_sequence_tensor_to_max(masked_logits, max_length, SOS_index)
+    # padded_logits = pad_sequence_tensor_to_max(masked_logits, max_length, SOS_index)
 
     # Calculate max length out of model generation and target labels
     max_target_size = max(t.size(0) for t in target_batch)
@@ -287,7 +344,7 @@ def evaluate(model, loss_fn, input_batch, target_batch, tgt_vocab, max_length, d
 
     # Truncate to this max length
     target_label = padded_target_batch[:, :max_seq_len]
-    output_logits = padded_logits[:, :max_seq_len, :]
+    output_logits = masked_logits[:, :max_seq_len, :]
 
     # Get loss
     total_loss = 0
@@ -299,9 +356,11 @@ def evaluate(model, loss_fn, input_batch, target_batch, tgt_vocab, max_length, d
     preds = torch.argmax(output_logits, dim = 2).tolist()
     pred_sentences = [ids_to_sentence(pred, tgt_vocab) for pred in preds]
     target_sentences = [ids_to_sentence(target, tgt_vocab) for target in target_batch]
+    print(f"Target sentence : {target_sentences[:1]}")
+    print(f"Pred sentences : {pred_sentences[:1]}")
 
     # Calculate bleu scores across sentences
-    scores = [sentence_bleu(target_sent, pred_sent) for (target_sent, pred_sent) in zip(target_sentences, pred_sentences)]
+    scores = [sentence_bleu([target_sent], pred_sent) for (target_sent, pred_sent) in zip(target_sentences, pred_sentences)]
 
     # Return avg bleu score and dev loss
     return sum(scores) / len(scores), total_loss.item()
@@ -344,8 +403,8 @@ if __name__ == "__main__":
     dev_losses = []
     bleu_scores = []
     
-    train_pairs = get_pairs(args.train_file, max_size=10000)
-    dev_pairs = get_pairs(args.dev_file, max_size = 100000)
+    train_pairs = get_pairs(args.train_file, max_size=30000)
+    dev_pairs = get_pairs(args.dev_file, max_size = 5000)
     # silver_pairs = get_pairs(args.silver_file)
     # test_pairs = get_pairs(args.test_file)
 
@@ -393,7 +452,8 @@ if __name__ == "__main__":
             
         # No need to pad input_batch because these are fixed-length embeds
         # Pad target sentences to max_length
-        train_loss = train(model, optimizer, loss_fn, input_batch, target_batch, max_length = args.max_length, device = device)
+        max_length = args.max_length
+        train_loss = train(model, optimizer, loss_fn, input_batch, target_batch, max_length = max_length, device = device)
         train_losses.append(train_loss)
         print_loss_total += train_loss
         if iter_num % args.checkpoint_every == 0:

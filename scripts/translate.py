@@ -16,12 +16,12 @@ def embed_batched_input(model, tokenizer, src_batch, device = "cpu"):
                         token_type_ids = tokens["token_type_ids"].to(device),
                         output_hidden_states = True)
     
-    # Grab CLS token as sent representation
+
     bert_hidden_states = bert_output["hidden_states"]
-    cls_token_batch = bert_hidden_states[-1][:,0,:]
+    final_layer_token_batch = bert_hidden_states[-1]
     
     # Split batch into list of source sentence embeddings
-    s_embeddings = torch.split(cls_token_batch, split_size_or_sections=1, dim=0)
+    s_embeddings = torch.split(final_layer_token_batch, split_size_or_sections=1, dim=0)
     return s_embeddings
 
 if __name__ == "__main__":

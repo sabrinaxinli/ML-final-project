@@ -205,17 +205,17 @@ if __name__ == "__main__":
         for (src_line, tgt_line) in zip(src_lines, tgt_lines):
             parallel_file.write(json.dumps((src_line, tgt_line)) + "\n")
 
-    # tgt_id_lists = []
-    # for tgt_line in tgt_lines:
-    #     tgt_id_lists.append(id_list_from_sentence(tgt_vocab, tgt_line))
+    tgt_id_lists = []
+    for tgt_line in tgt_lines:
+        tgt_id_lists.append(id_list_from_sentence(tgt_vocab, tgt_line))
     
-    # assert len(src_lines) == len(tgt_lines)
-    # assert len(src_lines) == len(tgt_id_lists)
+    assert len(src_lines) == len(tgt_lines)
+    assert len(src_lines) == len(tgt_id_lists)
 
-    # model = BertModel.from_pretrained("bert-base-uncased")
-    # tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    model = BertModel.from_pretrained("bert-base-uncased")
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-    # write_out_embeddings(model, tokenizer, src_lines, tgt_id_lists, args.emb_output, args.batch_size, device)
+    write_out_embeddings(model, tokenizer, src_lines, tgt_id_lists, args.emb_output, args.batch_size, device)
 
 
     

@@ -94,13 +94,13 @@ else:
     result = env.TrainModel(source = training_splits[4:],
                             target = ["./work/result/results.txt"],
                             HIDDEN_SIZE = 768,
-                            N_ITERS = 1000,
+                            N_ITERS = 2000,
                             VCBS = tgt_vocab,
                             PRINT_EVERY = 50,
                             CHK_EVERY = 250,
                             BATCH_SIZE = 16,
                             INIT_LR = 0.001,
-                            LOAD_CHK = "")
+                            LOAD_CHK = "state_00000001500.pt")
 
    #  ["./work/train/en-de-parallel-train.jsonlines", "./work/train/en-de-embedded-train.jsonlines",
    #  "./work/dev/en-de-parallel-train.jsonlines", "./work/dev/en-de-embedded-train.jsonlines",
