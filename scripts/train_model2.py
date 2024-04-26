@@ -1,5 +1,3 @@
-
-
 import argparse
 import torch
 import jsonlines
@@ -160,19 +158,7 @@ class AttentionLSTMDecoder(nn.Module):
         return (h_0, c_0)
 
 
-# First item in pair is embedding, second is tgt_sent
-def get_pairs(datafile, max_size = 100000):
-    data = []
-    with gzip.open(datafile, "r") as file:
-        i = 0
-        for line in file:
-            if i < max_size:
-                data.append(json.loads(line))
-            else:
-                break
-            print(f"Datapoint: {i}")
-            i += 1
-    return data
+
 
 def zero_out_post_eos(logits, outputs):
     mask = (outputs == EOS_index).cumsum(dim = 1) <= 1 # [batch_size, seq_len]
@@ -236,7 +222,7 @@ def pad_sequence_with_mask(sequences, max_length, device = "cpu"):
         pad_tensor = torch.zeros(pad_length, seq.size(1), device = device)
         
         # Concat along seq_len dim
-        padded_seq = torch.cat([seq, pad_tensor], dim=0)
+        padded_seq = torch.cat([seq.to(device), pad_tensor], dim=0)
         padded_sequences.append(padded_seq)
         
         # Create mask (1 for real data, 0 for padding)
@@ -372,6 +358,49 @@ def evaluate(model, loss_fn, input_batch, target_batch, tgt_vocab, max_length, d
     # print(f"Target batch shape: {target_batch.shape}")
     # logging.info(f"Cleaned probs shape : {cleaned_probs.shape}")
     # logging.info(f"Target batch : {target_batch.shape}")
+
+    # First item in pair is embedding, second is tgt_sent
+def get_pairs(datafile, max_size = 100000):
+    data = []
+    with gzip.open(datafile, "r") as file:
+        i = 0
+        for line in file:
+            if i < max_size:
+                data.append(json.loads(line))
+            else:
+                break
+            print(f"Datapoint: {i}")
+            i += 1
+    return data
+
+def get_batches(train_pairs, max_length, batch_size, device = "cpu"):
+    src_batches = []
+    tgt_batches = []
+
+    input_batch = []
+    target_batch = []
+    for i in range(len(train_pairs)):
+        training_pair = train_pairs[i]
+        input_tensor = torch.tensor(training_pair[0], dtype = torch.float).squeeze(dim = 0).to(device) # needs to be of shape [seq_len, embed_size]
+        target_tensor = torch.tensor(training_pair[1], dtype = torch.long).to(device)
+        if target_tensor.size(0) > max_length:
+            print("Truncated")
+        target_tensor = target_tensor[:max_length] # truncate
+        input_batch.append(input_tensor)
+        target_batch.append(target_tensor)
+
+        if len(src_batches) == batch_size:
+            src_batches.append(input_batch)
+            tgt_batches.append(target_batch)
+            input_batch, target_batch = [], []
+    
+    if input_batch:
+        src_batches.append(input_batch)
+        tgt_batches.append(target_batch)
+        input_batch, target_batch = [], []
+    
+    return src_batches, tgt_batches
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -382,7 +411,7 @@ if __name__ == "__main__":
     parser.add_argument('--checkpoint_every', default=10, type=int, help = "write out checkpoint every this many batches")
     parser.add_argument('--batch_size', default=16, type=int, help = "batch_size")
     parser.add_argument('--initial_lr', default=0.001, type=float, help = "initial learning rate")
-    parser.add_argument("--max_length", default = 40, nargs="?", help = "max number of tokens in generation")
+    parser.add_argument("--max_length", default = 60, nargs="?", help = "max number of tokens in generation")
     parser.add_argument('--train_file', default = "train_file", help = "train data file")
     parser.add_argument('--dev_file', default = "dev_file", help= "dev data file")
     parser.add_argument('--silver_file', default = "silver_file", help= "silver data file")
@@ -437,32 +466,31 @@ if __name__ == "__main__":
     start = time.time()
     print_loss_total = 0
 
-    while iter_num < args.n_iters:
-        iter_num += 1
-        input_batch = []
-        target_batch = []
-        for i in range(args.batch_size):
-            training_pair = random.choice(train_pairs)
-            tgt = training_pair[1]
-            tgt.append(EOS_index)
-            input_tensor = torch.tensor(training_pair[0], dtype = torch.float).squeeze(dim = 0).to(device) # needs to be of shape [seq_len, embed_size]
-            target_tensor = torch.tensor(tgt, dtype = torch.long).to(device)
-            if target_tensor.size(0) > args.max_length:
-                print("Truncated")
-            target_tensor = target_tensor[:args.max_length] # truncate
-            input_batch.append(input_tensor)
-            target_batch.append(target_tensor)
-            
-        # No need to pad input_batch because these are fixed-length embeds
-        # Pad target sentences to max_length
+    src_batches, tgt_batches = get_batches(train_pairs, args.max_length, args.batch_size, device = "cpu")
+    dev_inputs, dev_outputs = get_batches(dev_pairs, args.max_length, args.batch_size)
+        
+    # No need to pad input_batch because these are fixed-length embeds
+    # Pad target sentences to max_length
+    for (input_batch, target_batch) in zip(src_batches, tgt_batches):
+        iter_num+=1
         max_length = args.max_length
         train_loss = train(model, optimizer, loss_fn, input_batch, target_batch, max_length = max_length, device = device)
         train_losses.append(train_loss)
         print_loss_total += train_loss
+
         if iter_num % args.checkpoint_every == 0:
-            avg_bleu, dev_loss = evaluate(model, loss_fn, input_batch, target_batch, tgt_vocab, args.max_length, device = device)
-            dev_losses.append(dev_loss)
-            bleu_scores.append(avg_bleu)
+            dev_bleu_scores = []
+            dev_loss_total = 0
+            for dev_input, dev_output in zip(dev_inputs, dev_outputs):
+                avg_bleu, dev_loss = evaluate(model, loss_fn, dev_input, dev_output, tgt_vocab, args.max_length, device=device)
+                dev_bleu_scores.append(avg_bleu)
+                dev_loss_total += dev_loss
+
+            avg_dev_loss = dev_loss_total / len(dev_outputs)
+            avg_bleu_score = sum(dev_bleu_scores) / len(dev_bleu_scores)
+            dev_losses.append(avg_dev_loss)
+            bleu_scores.append(avg_bleu_score)
+
             state = {"iter_num": iter_num,
                 "model_state": model.state_dict(),
                 "opt_state": optimizer.state_dict(),

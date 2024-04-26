@@ -148,7 +148,6 @@ def write_out_embeddings(model, tokenizer, src_sentences, tgt_sentences, output_
                 output.write(json.dumps((embedding.tolist(), tgt_sent)) + "\n")
             
             print(f"Done with batch {i}")
-            break
         output.flush()
 
 ######################################################################
