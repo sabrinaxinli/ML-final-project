@@ -388,4 +388,4 @@ if __name__ == "__main__":
     # test_pairs = get_pairs(args.test_file)
 
     if args.load_checkpoint:
-        state = torch.load(args.load_checkpoint)9
+        state = torch.load(args.load_checkpoint)

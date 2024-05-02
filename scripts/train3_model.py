@@ -93,6 +93,7 @@ class AttnDecoderRNN(nn.Module):
         print(f"Hidden shape: {hidden.shape}")
         query = hidden
         hidden = hidden.permute(1, 0, 2)
+        print(f"QUery shape HERE: {query.shape}")
         context, attn_weights = self.attention(query, encoder_outputs)
         print(f"Dim embedded: {embedded.shape}")
         print(f"Dim context: {context.shape}")
@@ -183,6 +184,7 @@ def train_epoch(dataloader,decoder, decoder_optimizer, criterion, device):
         decoder_optimizer.zero_grad()
 
         encoder_hidden = input_tensor.mean(dim = 1).to(device) # across seq len
+        print(f"ENCODER HIDDEN: {encoder_hidden.shape}")
         decoder_outputs, _, _ = decoder(input_tensor.to(device), encoder_hidden.to(device), target_tensor.to(device), device)
 
         loss = criterion(
@@ -208,7 +210,7 @@ def train(train_dataloader, decoder, n_epochs, learning_rate=0.001,
     criterion = nn.NLLLoss()
 
     for epoch in range(1, n_epochs + 1):
-        loss = train_epoch(train_dataloader,decoder, decoder_optimizer, criterion, device)
+        loss = train_epoch(train_dataloader, decoder, decoder_optimizer, criterion, device)
         print_loss_total += loss
         plot_loss_total += loss
 

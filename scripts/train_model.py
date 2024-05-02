@@ -82,7 +82,7 @@ class AttentionLSTMDecoder(nn.Module):
                 nn.init.orthogonal_(param.data)
             elif 'weight_ih' in name:
                 nn.init.xavier_uniform_(param.data)
-        self.output = nn.Linear(in_features = embed_dim * 3, out_features = vocab_size)
+        self.output = nn.Linear(in_features = 2 * hidden_size + embed_dim, out_features = vocab_size)
         self.dropout = nn.Dropout(dropout)
 
         self.encoder_attention = nn.Linear(in_features = embed_dim, out_features = hidden_size)
@@ -96,8 +96,10 @@ class AttentionLSTMDecoder(nn.Module):
         batch_size = len(embeddings) # get first dim as batch_size
 
         # Initialization
-        h_n, c_n = self.get_initial_state(batch_size, device = device) # init
+        decoder_start = torch.stack([embed.mean(dim = 0) for embed in embeddings], dim = 0).to(device)
+        h_n, c_n = self.get_initial_state(batch_size, decoder_start, device = device) # init
         curr_input = self.dropout(self.embedding(torch.full((batch_size, 1), SOS_index, device=device))) # [batch_size, 1, embed_dim]
+
 
         for t in range(max_length):
             # Calculate attention and create attention-based input
@@ -116,7 +118,7 @@ class AttentionLSTMDecoder(nn.Module):
             # print(f"weighted_embeddings_and_input: {weighted_embeddings_and_input.shape}")
             output_vector = torch.cat((lstm_output, weighted_embeddings_and_input), dim = 2)
             logits = self.output(output_vector).squeeze(dim = 1) # convert to [batch_size, num_classes]
-            pred = logits.argmax(dim = -1) # argmax across final output dim
+            pred = logits.argmax(dim = -1) # argmax across final output dims
             logit_outputs.append(logits)
             pred_outputs.append(pred)
             # if (pred == EOS_index).all():
@@ -154,8 +156,9 @@ class AttentionLSTMDecoder(nn.Module):
     #     c_0 = torch.zeros((1, batch_size, self.hidden_size), device = device)
     #     return (h_0, c_0)
     
-    def get_initial_state(self, batch_size, device):
-        h_0 = torch.nn.init.orthogonal_(torch.empty(1, batch_size, self.hidden_size, device=device))
+    def get_initial_state(self, batch_size, decoder_state, device):
+        h_0 = torch.nn.init.orthogonal_(decoder_state.unsqueeze(dim = 0))
+        # print(f"H0 start: {h_0.shape}")
         c_0 = torch.nn.init.orthogonal_(torch.empty(1, batch_size, self.hidden_size, device=device))
         return (h_0, c_0)
 
@@ -167,6 +170,7 @@ def get_pairs(datafile, max_size = 100000):
         i = 0
         for line in file:
             if i < max_size:
+                print(len(json.loads(line)[1]))
                 data.append(json.loads(line))
             else:
                 break
@@ -404,8 +408,8 @@ if __name__ == "__main__":
     dev_losses = []
     bleu_scores = []
     
-    train_pairs = get_pairs(args.train_file, max_size=2000)
-    dev_pairs = get_pairs(args.dev_file, max_size = 1000)
+    train_pairs = get_pairs(args.train_file, max_size=10)
+    dev_pairs = get_pairs(args.dev_file, max_size = 10)
     # silver_pairs = get_pairs(args.silver_file)
     # test_pairs = get_pairs(args.test_file)
 
@@ -448,6 +452,7 @@ if __name__ == "__main__":
             input_tensor = torch.tensor(training_pair[0], dtype = torch.float).squeeze(dim = 0).to(device) # needs to be of shape [seq_len, embed_size]
             target_tensor = torch.tensor(tgt, dtype = torch.long).to(device)
             if target_tensor.size(0) > args.max_length:
+                print(target_tensor.size(0))
                 print("Truncated")
             target_tensor = target_tensor[:args.max_length] # truncate
             input_batch.append(input_tensor)
